@@ -10,25 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mengchengtech/cerberus/pkg/manager/infosync"
 	"go.uber.org/atomic"
 )
-
-type mockTpFetcher struct {
-	t     *testing.T
-	infos map[string]*infosync.TiDBTopologyInfo
-	err   error
-}
-
-func newMockTpFetcher(t *testing.T) *mockTpFetcher {
-	return &mockTpFetcher{
-		t: t,
-	}
-}
-
-func (ft *mockTpFetcher) GetTiDBTopology(ctx context.Context) (map[string]*infosync.TiDBTopologyInfo, error) {
-	return ft.infos, ft.err
-}
 
 type mockBackendFetcher struct {
 	sync.Mutex

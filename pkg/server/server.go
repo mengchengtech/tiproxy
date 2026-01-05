@@ -127,7 +127,7 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 			nscs = append(nscs, nsc)
 		}
 
-		err = srv.namespaceManager.Init(lg.Named("nsmgr"), nscs, srv.infoSyncer, srv.httpCli, srv.configManager)
+		err = srv.namespaceManager.Init(lg.Named("nsmgr"), nscs, srv.httpCli, srv.configManager)
 		if err != nil {
 			return
 		}

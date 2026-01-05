@@ -9,7 +9,6 @@ package namespace
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sync"
 
 	"github.com/mengchengtech/cerberus/lib/config"
@@ -22,7 +21,7 @@ import (
 )
 
 type NamespaceManager interface {
-	Init(logger *zap.Logger, nscs []*config.Namespace, tpFetcher observer.TopologyFetcher,
+	Init(logger *zap.Logger, nscs []*config.Namespace,
 		httpCli *http.Client, cfgMgr *mconfig.ConfigManager) error
 	CommitNamespaces(nss []*config.Namespace, nssDelete []bool) error
 	GetNamespace(nm string) (*Namespace, bool)
@@ -33,11 +32,10 @@ type NamespaceManager interface {
 
 type namespaceManager struct {
 	sync.RWMutex
-	nsm       map[string]*Namespace
-	tpFetcher observer.TopologyFetcher
-	httpCli   *http.Client
-	logger    *zap.Logger
-	cfgMgr    *mconfig.ConfigManager
+	nsm     map[string]*Namespace
+	httpCli *http.Client
+	logger  *zap.Logger
+	cfgMgr  *mconfig.ConfigManager
 }
 
 func NewNamespaceManager() *namespaceManager {
@@ -50,11 +48,7 @@ func (mgr *namespaceManager) buildNamespace(cfg *config.Namespace) (*Namespace, 
 	// init BackendFetcher
 	var fetcher observer.BackendFetcher
 	healthCheckCfg := config.NewDefaultHealthCheckConfig()
-	if mgr.tpFetcher != nil && !reflect.ValueOf(mgr.tpFetcher).IsNil() {
-		fetcher = observer.NewPDFetcher(mgr.tpFetcher, logger.Named("be_fetcher"), healthCheckCfg)
-	} else {
-		fetcher = observer.NewStaticFetcher(cfg.Backend.Instances)
-	}
+	fetcher = observer.NewStaticFetcher(cfg.Backend.Instances)
 
 	// init Router
 	rt := router.NewScoreBasedRouter(logger.Named("router"))
@@ -99,10 +93,9 @@ func (mgr *namespaceManager) CommitNamespaces(nss []*config.Namespace, nssDelete
 	return nil
 }
 
-func (mgr *namespaceManager) Init(logger *zap.Logger, nscs []*config.Namespace, tpFetcher observer.TopologyFetcher,
+func (mgr *namespaceManager) Init(logger *zap.Logger, nscs []*config.Namespace,
 	httpCli *http.Client, cfgMgr *mconfig.ConfigManager) error {
 	mgr.Lock()
-	mgr.tpFetcher = tpFetcher
 	mgr.httpCli = httpCli
 	mgr.logger = logger
 	mgr.cfgMgr = cfgMgr

@@ -9,7 +9,6 @@ import (
 	"sync/atomic"
 
 	"github.com/mengchengtech/cerberus/lib/config"
-	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	mconfig "github.com/mengchengtech/cerberus/pkg/manager/config"
 	"github.com/mengchengtech/cerberus/pkg/manager/namespace"
 	"github.com/mengchengtech/cerberus/pkg/util/http"
@@ -28,7 +27,7 @@ func newMockNamespaceManager() *mockNamespaceManager {
 	return mgr
 }
 
-func (m *mockNamespaceManager) Init(_ *zap.Logger, _ []*config.Namespace, _ observer.TopologyFetcher,
+func (m *mockNamespaceManager) Init(_ *zap.Logger, _ []*config.Namespace,
 	_ *http.Client, _ *mconfig.ConfigManager) error {
 	return nil
 }
