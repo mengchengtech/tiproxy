@@ -13,7 +13,6 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/manager/cert"
 	mgrcfg "github.com/mengchengtech/cerberus/pkg/manager/config"
 	"github.com/mengchengtech/cerberus/pkg/manager/id"
-	"github.com/mengchengtech/cerberus/pkg/manager/infosync"
 	"github.com/mengchengtech/cerberus/pkg/manager/logger"
 	mgrns "github.com/mengchengtech/cerberus/pkg/manager/namespace"
 	"github.com/mengchengtech/cerberus/pkg/proxy"
@@ -35,7 +34,6 @@ type Server struct {
 	namespaceManager mgrns.NamespaceManager
 	loggerManager    *logger.LoggerManager
 	certManager      *cert.CertManager
-	infoSyncer       *infosync.InfoSyncer
 	// etcd client
 	etcdCli *clientv3.Client
 	// HTTP client
@@ -90,14 +88,6 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 	srv.etcdCli, err = etcd.InitEtcdClient(lg.Named("etcd"), cfg, srv.certManager)
 	if err != nil {
 		return
-	}
-
-	// setup info syncer
-	if cfg.Proxy.PDAddrs != "" {
-		srv.infoSyncer = infosync.NewInfoSyncer(lg.Named("infosync"), srv.etcdCli)
-		if err = srv.infoSyncer.Init(ctx, cfg); err != nil {
-			return
-		}
 	}
 
 	// setup namespace manager
@@ -195,9 +185,6 @@ func (s *Server) Close() error {
 	}
 	if s.namespaceManager != nil {
 		errs = append(errs, s.namespaceManager.Close())
-	}
-	if s.infoSyncer != nil {
-		errs = append(errs, s.infoSyncer.Close())
 	}
 	if s.configManager != nil {
 		errs = append(errs, s.configManager.Close())
