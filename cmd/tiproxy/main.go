@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/cmd"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
@@ -35,14 +34,6 @@ func main() {
 	rootCmd.PersistentFlags().StringVar(&configInfo, "config-info", "", "output config info and exit")
 
 	rootCmd.RunE = func(cmd *cobra.Command, _ []string) error {
-		if configInfo != "" {
-			info, err := config.ConfigInfo(configInfo)
-			if err != nil {
-				return err
-			}
-			cmd.Println(info)
-			return nil
-		}
 		srv, err := server.NewServer(cmd.Context(), sctx)
 		if err != nil {
 			return errors.Wrapf(err, "fail to create server")
