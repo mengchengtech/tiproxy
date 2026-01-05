@@ -5,7 +5,6 @@ package server
 
 import (
 	"context"
-	"reflect"
 	"runtime"
 
 	"github.com/mengchengtech/cerberus/lib/config"
@@ -17,7 +16,6 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/manager/infosync"
 	"github.com/mengchengtech/cerberus/pkg/manager/logger"
 	mgrns "github.com/mengchengtech/cerberus/pkg/manager/namespace"
-	"github.com/mengchengtech/cerberus/pkg/manager/vip"
 	"github.com/mengchengtech/cerberus/pkg/proxy"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
@@ -37,7 +35,6 @@ type Server struct {
 	namespaceManager mgrns.NamespaceManager
 	loggerManager    *logger.LoggerManager
 	certManager      *cert.CertManager
-	vipManager       vip.VIPManager
 	infoSyncer       *infosync.InfoSyncer
 	// etcd client
 	etcdCli *clientv3.Client
@@ -163,19 +160,6 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 		return
 	}
 
-	// setup vip manager
-	{
-		srv.vipManager, err = vip.NewVIPManager(lg.Named("vipmgr"), srv.configManager)
-		if err != nil {
-			return
-		}
-		if srv.vipManager != nil && !reflect.ValueOf(srv.vipManager).IsNil() {
-			if err = srv.vipManager.Start(ctx, srv.etcdCli); err != nil {
-				return
-			}
-		}
-	}
-
 	ready.Toggle()
 	return
 }
@@ -194,10 +178,6 @@ func printInfo(lg *zap.Logger) {
 }
 
 func (s *Server) preClose() {
-	// Resign the VIP owner before closing the SQL server so that clients connect to other nodes.
-	if s.vipManager != nil && !reflect.ValueOf(s.vipManager).IsNil() {
-		s.vipManager.PreClose()
-	}
 	// Make the API server return unhealth.
 	if s.apiServer != nil {
 		s.apiServer.PreClose()
@@ -212,9 +192,6 @@ func (s *Server) Close() error {
 	s.preClose()
 
 	errs := make([]error, 0, 4)
-	if s.vipManager != nil && !reflect.ValueOf(s.vipManager).IsNil() {
-		s.vipManager.Close()
-	}
 	if s.proxy != nil {
 		errs = append(errs, s.proxy.Close())
 	}
