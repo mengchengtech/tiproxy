@@ -18,9 +18,7 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/proxy"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
-	"github.com/mengchengtech/cerberus/pkg/util/etcd"
 	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
-	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
@@ -32,8 +30,6 @@ type Server struct {
 	namespaceManager mgrns.NamespaceManager
 	loggerManager    *logger.LoggerManager
 	certManager      *cert.CertManager
-	// etcd client
-	etcdCli *clientv3.Client
 	// L7 proxy
 	proxy *proxy.SQLServer
 }
@@ -78,33 +74,19 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 		return
 	}
 
-	// setup etcd client
-	srv.etcdCli, err = etcd.InitEtcdClient(lg.Named("etcd"), cfg, srv.certManager)
-	if err != nil {
-		return
-	}
-
 	// setup namespace manager
 	{
-		nscs, nerr := srv.configManager.ListAllNamespace(ctx)
-		if nerr != nil {
-			err = nerr
+		// no existed namespace
+		nsc := &config.Namespace{
+			Namespace: "default",
+			Backend: config.BackendNamespace{
+				Instances: []string{},
+			},
+		}
+		if err = srv.configManager.SetNamespace(ctx, nsc.Namespace, nsc); err != nil {
 			return
 		}
-
-		if len(nscs) == 0 {
-			// no existed namespace
-			nsc := &config.Namespace{
-				Namespace: "default",
-				Backend: config.BackendNamespace{
-					Instances: []string{},
-				},
-			}
-			if err = srv.configManager.SetNamespace(ctx, nsc.Namespace, nsc); err != nil {
-				return
-			}
-			nscs = append(nscs, nsc)
-		}
+		nscs := []*config.Namespace{nsc}
 
 		err = srv.namespaceManager.Init(lg.Named("nsmgr"), nscs, srv.configManager)
 		if err != nil {
@@ -168,9 +150,6 @@ func (s *Server) Close() error {
 	}
 	if s.loggerManager != nil {
 		errs = append(errs, s.loggerManager.Close())
-	}
-	if s.etcdCli != nil {
-		errs = append(errs, s.etcdCli.Close())
 	}
 	s.wg.Wait()
 	return errors.Collect(ErrCloseServer, errs...)
