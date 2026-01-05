@@ -17,7 +17,6 @@ import (
 
 const (
 	pathPrefixNamespace = "ns"
-	pathPrefixConfig    = "config"
 )
 
 const (
