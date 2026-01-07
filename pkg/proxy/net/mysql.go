@@ -12,7 +12,7 @@ import (
 
 	gomysql "github.com/go-mysql-org/go-mysql/mysql"
 	"github.com/go-mysql-org/go-mysql/packet"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/pingcap/tidb/parser/mysql"
 	"github.com/siddontang/go/hack"
 	"go.uber.org/zap"

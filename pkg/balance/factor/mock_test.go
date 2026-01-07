@@ -6,9 +6,9 @@ package factor
 import (
 	"strconv"
 
-	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"github.com/mengchengtech/cerberus/pkg/balance/policy"
+	"github.com/mengchengtech/cerberus/pkg/config"
 	"go.uber.org/zap"
 )
 

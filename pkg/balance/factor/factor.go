@@ -4,7 +4,7 @@
 package factor
 
 import (
-	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/config"
 	"go.uber.org/zap"
 )
 

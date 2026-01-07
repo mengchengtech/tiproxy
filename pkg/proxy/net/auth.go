@@ -8,7 +8,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 
-	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/siddontang/go/hack"
 )
 

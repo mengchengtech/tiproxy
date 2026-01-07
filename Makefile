@@ -57,18 +57,15 @@ header: go-header
 	[ ! $(NEW_GO_FILES) ] || $(GOBIN)/go-header $(NEW_GO_FILES)
 
 lint: golangci-lint tidy header
-	cd lib && $(GOBIN)/golangci-lint run -c ../.golangci.yaml
 	$(GOBIN)/golangci-lint run -c .golangci.yaml
 
 gocovmerge:
 	GOBIN=$(GOBIN) go install github.com/djshow832/gocovmerge@master
 
 tidy:
-	cd lib && go mod tidy
 	go mod tidy
 
 build:
-	cd lib && go build ./...
 	go build ./...
 
 metrics:
@@ -79,7 +76,6 @@ metrics:
 test: gocovmerge
 	rm -f .cover.*
 	go test -coverprofile=.cover.pkg ./...
-	cd lib && go test -coverprofile=../.cover.lib ./...
 	$(GOBIN)/gocovmerge .cover.* > coverage.dat
 	go tool cover -func=coverage.dat -o .cover.func
 	tail -1 .cover.func

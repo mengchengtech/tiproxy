@@ -4,8 +4,8 @@
 package policy
 
 import (
-	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
+	"github.com/mengchengtech/cerberus/pkg/config"
 )
 
 type BalancePolicy interface {

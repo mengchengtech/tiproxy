@@ -7,8 +7,8 @@ import (
 	"crypto/tls"
 	"io"
 
-	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/util/bufio"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 )
 
 // tlsHandshakeConn is only used as the underlying connection in tls.Conn.

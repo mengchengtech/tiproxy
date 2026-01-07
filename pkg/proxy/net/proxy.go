@@ -8,8 +8,8 @@ import (
 	"net"
 	"sync/atomic"
 
-	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/proxy/proxyprotocol"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 )
 
 func (p *packetIO) EnableProxyClient(proxy *proxyprotocol.Proxy) {

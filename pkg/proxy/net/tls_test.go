@@ -9,8 +9,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/mengchengtech/cerberus/lib/util/security"
 	"github.com/mengchengtech/cerberus/pkg/testkit"
+	"github.com/mengchengtech/cerberus/pkg/util/security"
 	"github.com/stretchr/testify/require"
 )
 

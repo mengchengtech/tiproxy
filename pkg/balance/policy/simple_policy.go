@@ -6,7 +6,7 @@ package policy
 import (
 	"sort"
 
-	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/config"
 )
 
 var _ BalancePolicy = (*SimpleBalancePolicy)(nil)

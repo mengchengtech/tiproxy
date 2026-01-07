@@ -10,9 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
 	"github.com/mengchengtech/cerberus/pkg/server"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
 	"github.com/spf13/cobra"
 )

@@ -8,7 +8,7 @@ package keepalive
 import (
 	"syscall"
 
-	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/config"
 )
 
 const _TCP_USER_TIMEOUT = 0x12

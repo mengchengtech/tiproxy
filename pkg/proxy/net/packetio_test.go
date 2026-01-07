@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/go-mysql-org/go-mysql/mysql"
-	"github.com/mengchengtech/cerberus/lib/config"
-	"github.com/mengchengtech/cerberus/lib/util/logger"
-	"github.com/mengchengtech/cerberus/lib/util/security"
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/pkg/config"
 	"github.com/mengchengtech/cerberus/pkg/testkit"
+	"github.com/mengchengtech/cerberus/pkg/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/util/security"
+	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
 	"github.com/stretchr/testify/require"
 )
 

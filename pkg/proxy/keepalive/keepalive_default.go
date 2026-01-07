@@ -6,7 +6,7 @@
 package keepalive
 
 import (
-	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/config"
 )
 
 func setKeepalive(fd uintptr, cfg config.KeepAlive) error {

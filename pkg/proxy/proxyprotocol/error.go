@@ -3,7 +3,7 @@
 
 package proxyprotocol
 
-import "github.com/mengchengtech/cerberus/lib/util/errors"
+import "github.com/mengchengtech/cerberus/pkg/util/errors"
 
 var (
 	ErrAddressFamilyMismatch = errors.New("address family between source and target mismatched")

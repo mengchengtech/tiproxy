@@ -8,7 +8,7 @@ package keepalive
 import (
 	"syscall"
 
-	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/config"
 )
 
 func setTimeout(fd uintptr, cfg config.KeepAlive) error {

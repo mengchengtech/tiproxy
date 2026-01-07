@@ -8,10 +8,10 @@ import (
 	"net"
 	"testing"
 
-	"github.com/mengchengtech/cerberus/lib/util/logger"
-	"github.com/mengchengtech/cerberus/lib/util/security"
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/util/security"
+	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
 	"github.com/stretchr/testify/require"
 )
 

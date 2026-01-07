@@ -14,11 +14,11 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/go-mysql-org/go-mysql/mysql"
-	"github.com/mengchengtech/cerberus/lib/config"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
+	"github.com/mengchengtech/cerberus/pkg/config"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
 	"github.com/pingcap/tidb/parser"
 	"go.uber.org/zap"
 )

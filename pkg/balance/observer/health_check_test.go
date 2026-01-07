@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/go-mysql-org/go-mysql/packet"
-	"github.com/mengchengtech/cerberus/lib/util/logger"
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/testkit"
+	"github.com/mengchengtech/cerberus/pkg/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
 	"github.com/stretchr/testify/require"
 )
 

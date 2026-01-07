@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/mengchengtech/cerberus/lib/config"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/config"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"

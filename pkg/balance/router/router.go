@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	glist "github.com/bahlo/generic-list-go"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"go.uber.org/zap"
 )
 

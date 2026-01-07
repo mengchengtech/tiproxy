@@ -30,11 +30,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/mengchengtech/cerberus/lib/config"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/config"
 	"github.com/mengchengtech/cerberus/pkg/proxy/keepalive"
 	"github.com/mengchengtech/cerberus/pkg/proxy/proxyprotocol"
 	"github.com/mengchengtech/cerberus/pkg/util/bufio"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/pingcap/tidb/errno"
 	"github.com/pingcap/tidb/util/dbterror"
 	"go.uber.org/zap"

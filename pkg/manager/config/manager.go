@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/mengchengtech/cerberus/lib/config"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/config"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/tidwall/btree"
 	"go.uber.org/zap"
 )

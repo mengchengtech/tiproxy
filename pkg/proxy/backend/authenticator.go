@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"github.com/go-mysql-org/go-mysql/mysql"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/mengchengtech/cerberus/pkg/proxy/proxyprotocol"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/pingcap/tidb/util/hack"
 	"go.uber.org/zap"
 )

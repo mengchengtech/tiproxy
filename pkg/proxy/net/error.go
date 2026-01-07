@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 )
 
 var (

@@ -4,8 +4,8 @@
 package logger
 
 import (
-	"github.com/mengchengtech/cerberus/lib/config"
-	lg "github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/config"
+	lg "github.com/mengchengtech/cerberus/pkg/util/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

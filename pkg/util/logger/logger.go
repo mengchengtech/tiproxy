@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

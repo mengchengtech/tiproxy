@@ -3,7 +3,7 @@
 
 package proxy
 
-import "github.com/mengchengtech/cerberus/lib/util/errors"
+import "github.com/mengchengtech/cerberus/pkg/util/errors"
 
 var (
 	ErrCloseServer = errors.New("failed to close sqlserver")

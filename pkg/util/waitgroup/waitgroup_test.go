@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/util/logger"
 	"github.com/stretchr/testify/require"
 )
 

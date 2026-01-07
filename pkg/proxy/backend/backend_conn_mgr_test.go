@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mengchengtech/cerberus/lib/util/errors"
-	"github.com/mengchengtech/cerberus/lib/util/logger"
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )

@@ -7,8 +7,8 @@ import (
 	"context"
 
 	"github.com/go-mysql-org/go-mysql/mysql"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 )
 
 // These errors may not be disconnection errors. They are used for marking whether the error comes from the client or the backend.

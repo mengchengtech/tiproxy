@@ -7,8 +7,6 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/mengchengtech/cerberus/lib/util/errors"
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/manager/cert"
 	mgrcfg "github.com/mengchengtech/cerberus/pkg/manager/config"
 	"github.com/mengchengtech/cerberus/pkg/manager/id"
@@ -17,7 +15,9 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/proxy"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
+	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )

@@ -10,11 +10,11 @@ import (
 	"sync"
 
 	glist "github.com/bahlo/generic-list-go"
-	"github.com/mengchengtech/cerberus/lib/config"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"github.com/mengchengtech/cerberus/pkg/balance/policy"
+	"github.com/mengchengtech/cerberus/pkg/config"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
 	"go.uber.org/zap"
 )
 

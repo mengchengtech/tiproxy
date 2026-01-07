@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/stretchr/testify/require"
 )
 

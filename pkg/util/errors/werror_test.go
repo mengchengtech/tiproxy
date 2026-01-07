@@ -6,7 +6,7 @@ package errors_test
 import (
 	"testing"
 
-	serr "github.com/mengchengtech/cerberus/lib/util/errors"
+	serr "github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/stretchr/testify/require"
 )
 

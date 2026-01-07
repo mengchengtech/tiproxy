@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
 	"github.com/stretchr/testify/require"
 )
 

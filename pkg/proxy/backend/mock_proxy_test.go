@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/go-mysql-org/go-mysql/mysql"
-	"github.com/mengchengtech/cerberus/lib/util/logger"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/util/logger"
 	"go.uber.org/zap"
 )
 

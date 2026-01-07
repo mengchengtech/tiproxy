@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mengchengtech/cerberus/lib/config"
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/pkg/config"
+	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
 	"go.uber.org/zap"
 )
 

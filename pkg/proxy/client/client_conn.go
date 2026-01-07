@@ -8,9 +8,9 @@ import (
 	"crypto/tls"
 	"net"
 
-	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"go.uber.org/zap"
 )
 

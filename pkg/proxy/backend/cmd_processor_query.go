@@ -7,8 +7,8 @@ import (
 	"encoding/binary"
 
 	"github.com/go-mysql-org/go-mysql/mysql"
-	"github.com/mengchengtech/cerberus/lib/util/errors"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/siddontang/go/hack"
 )
 
