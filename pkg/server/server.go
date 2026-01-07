@@ -8,7 +8,7 @@ import (
 	"runtime"
 
 	"github.com/mengchengtech/cerberus/pkg/manager/cert"
-	mgrcfg "github.com/mengchengtech/cerberus/pkg/manager/config"
+	"github.com/mengchengtech/cerberus/pkg/manager/config"
 	"github.com/mengchengtech/cerberus/pkg/manager/id"
 	"github.com/mengchengtech/cerberus/pkg/manager/logger"
 	mgrrouter "github.com/mengchengtech/cerberus/pkg/manager/router"
@@ -25,7 +25,7 @@ import (
 type Server struct {
 	wg waitgroup.WaitGroup
 	// managers
-	configManager *mgrcfg.ConfigManager
+	configManager config.ConfigManager
 	routerManager mgrrouter.RouterManager
 	loggerManager *logger.LoggerManager
 	certManager   *cert.CertManager
@@ -34,8 +34,14 @@ type Server struct {
 }
 
 func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error) {
+	cfgManager := config.NewConfigManager()
+	// setup config manager
+	if err = cfgManager.Init(sctx.ConfigFile); err != nil {
+		return
+	}
+
 	srv = &Server{
-		configManager: mgrcfg.NewConfigManager(),
+		configManager: cfgManager,
 		routerManager: mgrrouter.NewRouterManager(),
 		certManager:   cert.NewCertManager(),
 	}
@@ -43,17 +49,13 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 	handler := sctx.Handler
 	ready := atomic.NewBool(false)
 
+	cfg := srv.configManager.GetConfig()
+
 	// set up logger
 	var lg *zap.Logger
-	if srv.loggerManager, lg, err = logger.NewLoggerManager(nil); err != nil {
+	if srv.loggerManager, lg, err = logger.NewLoggerManager(&cfg.Log); err != nil {
 		return
 	}
-
-	// setup config manager
-	if err = srv.configManager.Init(ctx, lg.Named("config"), sctx.ConfigFile); err != nil {
-		return
-	}
-	cfg := srv.configManager.GetConfig()
 
 	// welcome messages must be printed after initialization of configmager, because
 	// logfile backended zaplogger is enabled after cfgmgr.Init(..).
@@ -72,7 +74,7 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 		return
 	}
 
-	// setup namespace manager
+	// setup router manager
 	{
 		err = srv.routerManager.Init(lg.Named("nsmgr"), srv.configManager)
 		if err != nil {

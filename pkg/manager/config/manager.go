@@ -4,55 +4,26 @@
 package config
 
 import (
-	"bytes"
-	"context"
 	"os"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/mengchengtech/cerberus/pkg/config"
 	"github.com/mengchengtech/cerberus/pkg/util/errors"
-	"github.com/tidwall/btree"
-	"go.uber.org/zap"
 )
 
-const (
-	checkFileInterval = 2 * time.Second
-)
-
-var (
-	ErrNoResults = errors.Errorf("has no results")
-)
-
-type KVValue struct {
-	Key   string
-	Value []byte
+type configManager struct {
+	config *config.Config
 }
 
-type ConfigManager struct {
-	logger *zap.Logger
-
-	kv *btree.BTreeG[KVValue]
-
-	checkFileInterval time.Duration
-	fileContent       []byte // used to compare whether the config file has changed
-	current           *config.Config
+type ConfigManager interface {
+	GetConfig() *config.Config
 }
 
-func NewConfigManager() *ConfigManager {
-	return &ConfigManager{
-		checkFileInterval: checkFileInterval,
-	}
+func NewConfigManager() *configManager {
+	return &configManager{}
 }
 
-func (e *ConfigManager) Init(ctx context.Context, logger *zap.Logger, configFile string) error {
-	e.logger = logger
-
-	// for namespace persistence
-	e.kv = btree.NewBTreeG(func(a, b KVValue) bool {
-		return a.Key < b.Key
-	})
-
+func (e *configManager) Init(configFile string) error {
 	if configFile != "" {
 		if err := e.reloadConfigFile(configFile); err != nil {
 			return err
@@ -66,15 +37,11 @@ func (e *ConfigManager) Init(ctx context.Context, logger *zap.Logger, configFile
 	return nil
 }
 
-func (e *ConfigManager) reloadConfigFile(file string) error {
+func (e *configManager) reloadConfigFile(file string) error {
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	if bytes.Equal(content, e.fileContent) {
-		return nil
-	}
-	e.fileContent = content
 
 	return e.SetTOMLConfig(content)
 }
@@ -84,8 +51,8 @@ func (e *ConfigManager) reloadConfigFile(file string) error {
 // `c.max-conns == 0` means no user-input, or it specified `0`.
 // So we always update the current config with a TOML string, which only overwrite fields
 // that are specified by users.
-func (e *ConfigManager) SetTOMLConfig(data []byte) (err error) {
-	base := e.current
+func (e *configManager) SetTOMLConfig(data []byte) (err error) {
+	base := e.config
 	if base == nil {
 		base = config.NewConfig()
 	} else {
@@ -100,10 +67,10 @@ func (e *ConfigManager) SetTOMLConfig(data []byte) (err error) {
 		return
 	}
 
-	e.current = base
+	e.config = base
 	return
 }
 
-func (e *ConfigManager) GetConfig() *config.Config {
-	return e.current
+func (e *configManager) GetConfig() *config.Config {
+	return e.config
 }

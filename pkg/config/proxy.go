@@ -4,14 +4,12 @@
 package config
 
 import (
-	"bytes"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/mengchengtech/cerberus/pkg/util/errors"
 )
 
@@ -22,32 +20,32 @@ var (
 
 type Config struct {
 	Proxy    ProxyServer `yaml:"proxy,omitempty" toml:"proxy,omitempty" json:"proxy,omitempty"`
-	Workdir  string      `yaml:"workdir,omitempty" toml:"workdir,omitempty" json:"workdir,omitempty" reloadable:"false"`
+	Workdir  string      `yaml:"workdir,omitempty" toml:"workdir,omitempty" json:"workdir,omitempty"`
 	Security Security    `yaml:"security,omitempty" toml:"security,omitempty" json:"security,omitempty"`
 	Log      Log         `yaml:"log,omitempty" toml:"log,omitempty" json:"log,omitempty"`
 }
 
 type KeepAlive struct {
-	Enabled bool `yaml:"enabled,omitempty" toml:"enabled,omitempty" json:"enabled,omitempty" reloadable:"true"`
+	Enabled bool `yaml:"enabled,omitempty" toml:"enabled,omitempty" json:"enabled,omitempty"`
 	// Idle, Cnt, and Intvl works only when the connection is idle. User packets will interrupt keep-alive.
 	// If the peer crashes and doesn't send any packets, the connection will be closed within Idle+Cnt*Intvl.
-	Idle  time.Duration `yaml:"idle,omitempty" toml:"idle,omitempty" json:"idle,omitempty" reloadable:"true"`
-	Cnt   int           `yaml:"cnt,omitempty" toml:"cnt,omitempty" json:"cnt,omitempty" reloadable:"true"`
-	Intvl time.Duration `yaml:"intvl,omitempty" toml:"intvl,omitempty" json:"intvl,omitempty" reloadable:"true"`
+	Idle  time.Duration `yaml:"idle,omitempty" toml:"idle,omitempty" json:"idle,omitempty"`
+	Cnt   int           `yaml:"cnt,omitempty" toml:"cnt,omitempty" json:"cnt,omitempty"`
+	Intvl time.Duration `yaml:"intvl,omitempty" toml:"intvl,omitempty" json:"intvl,omitempty"`
 	// Timeout is the timeout of waiting ACK. It works for both user packets and keep-alive.
 	// It is suggested to be equal or close to Cnt*Intvl.
-	Timeout time.Duration `yaml:"timeout,omitempty" toml:"timeout,omitempty" json:"timeout,omitempty" reloadable:"true"`
+	Timeout time.Duration `yaml:"timeout,omitempty" toml:"timeout,omitempty" json:"timeout,omitempty"`
 }
 
 // HealthCheck contains some configurations for health check.
 // Some general configurations of them may be exposed to users in the future.
 // We can use shorter durations to speed up unit tests.
 type HealthCheck struct {
-	Enable        bool          `yaml:"enable" json:"enable" toml:"enable" reloadable:"false"`
-	Interval      time.Duration `yaml:"interval" json:"interval" toml:"interval" reloadable:"false"`
-	MaxRetries    int           `yaml:"max-retries" json:"max-retries" toml:"max-retries" reloadable:"false"`
-	RetryInterval time.Duration `yaml:"retry-interval" json:"retry-interval" toml:"retry-interval" reloadable:"false"`
-	DialTimeout   time.Duration `yaml:"dial-timeout" json:"dial-timeout" toml:"dial-timeout" reloadable:"false"`
+	Enable        bool          `yaml:"enable" json:"enable" toml:"enable"`
+	Interval      time.Duration `yaml:"interval" json:"interval" toml:"interval"`
+	MaxRetries    int           `yaml:"max-retries" json:"max-retries" toml:"max-retries"`
+	RetryInterval time.Duration `yaml:"retry-interval" json:"retry-interval" toml:"retry-interval"`
+	DialTimeout   time.Duration `yaml:"dial-timeout" json:"dial-timeout" toml:"dial-timeout"`
 }
 
 type Backend struct {
@@ -59,8 +57,8 @@ type ProxyServer struct {
 	Addr    string  `yaml:"addr,omitempty" toml:"addr,omitempty" json:"addr,omitempty"`
 	Backend Backend `yaml:"backend" json:"backend" toml:"backend"`
 
-	MaxConnections    uint64    `yaml:"max-connections,omitempty" toml:"max-connections,omitempty" json:"max-connections,omitempty" reloadable:"true"`
-	ConnBufferSize    int       `yaml:"conn-buffer-size,omitempty" toml:"conn-buffer-size,omitempty" json:"conn-buffer-size,omitempty" reloadable:"true"`
+	MaxConnections    uint64    `yaml:"max-connections,omitempty" toml:"max-connections,omitempty" json:"max-connections,omitempty"`
+	ConnBufferSize    int       `yaml:"conn-buffer-size,omitempty" toml:"conn-buffer-size,omitempty" json:"conn-buffer-size,omitempty"`
 	FrontendKeepalive KeepAlive `yaml:"frontend-keepalive" toml:"frontend-keepalive" json:"frontend-keepalive"`
 	// BackendHealthyKeepalive applies when the observer treats the backend as healthy.
 	// The config values should be conservative to save CPU and tolerate network fluctuation.
@@ -68,38 +66,34 @@ type ProxyServer struct {
 	// BackendUnhealthyKeepalive applies when the observer treats the backend as unhealthy.
 	// The config values can be aggressive because the backend may stop anytime.
 	BackendUnhealthyKeepalive KeepAlive `yaml:"backend-unhealthy-keepalive" toml:"backend-unhealthy-keepalive" json:"backend-unhealthy-keepalive"`
-	ProxyProtocol             string    `yaml:"proxy-protocol,omitempty" toml:"proxy-protocol,omitempty" json:"proxy-protocol,omitempty" reloadable:"true"`
+	ProxyProtocol             string    `yaml:"proxy-protocol,omitempty" toml:"proxy-protocol,omitempty" json:"proxy-protocol,omitempty"`
 	// In k8s, the pod terminationGracePeriodSeconds can be set to very long so that these configs can be updated online.
-	GracefulWaitBeforeShutdown int `yaml:"graceful-wait-before-shutdown,omitempty" toml:"graceful-wait-before-shutdown,omitempty" json:"graceful-wait-before-shutdown,omitempty" reloadable:"true"`
-	GracefulCloseConnTimeout   int `yaml:"graceful-close-conn-timeout,omitempty" toml:"graceful-close-conn-timeout,omitempty" json:"graceful-close-conn-timeout,omitempty" reloadable:"true"`
-}
-
-type LogOnline struct {
-	Level   string  `yaml:"level,omitempty" toml:"level,omitempty" json:"level,omitempty" reloadable:"true"`
-	LogFile LogFile `yaml:"log-file,omitempty" toml:"log-file,omitempty" json:"log-file,omitempty"`
+	GracefulWaitBeforeShutdown int `yaml:"graceful-wait-before-shutdown,omitempty" toml:"graceful-wait-before-shutdown,omitempty" json:"graceful-wait-before-shutdown,omitempty"`
+	GracefulCloseConnTimeout   int `yaml:"graceful-close-conn-timeout,omitempty" toml:"graceful-close-conn-timeout,omitempty" json:"graceful-close-conn-timeout,omitempty"`
 }
 
 type Log struct {
-	Encoder   string `yaml:"encoder,omitempty" toml:"encoder,omitempty" json:"encoder,omitempty" reloadable:"false"`
-	LogOnline `yaml:",inline" toml:",inline" json:",inline"`
+	Encoder string  `yaml:"encoder,omitempty" toml:"encoder,omitempty" json:"encoder,omitempty"`
+	Level   string  `yaml:"level,omitempty" toml:"level,omitempty" json:"level,omitempty"`
+	LogFile LogFile `yaml:"log-file,omitempty" toml:"log-file,omitempty" json:"log-file,omitempty"`
 }
 
 type LogFile struct {
-	Filename   string `yaml:"filename,omitempty" toml:"filename,omitempty" json:"filename,omitempty" reloadable:"true"`
-	MaxSize    int    `yaml:"max-size,omitempty" toml:"max-size,omitempty" json:"max-size,omitempty" reloadable:"true"`
-	MaxDays    int    `yaml:"max-days,omitempty" toml:"max-days,omitempty" json:"max-days,omitempty" reloadable:"true"`
-	MaxBackups int    `yaml:"max-backups,omitempty" toml:"max-backups,omitempty" json:"max-backups,omitempty" reloadable:"true"`
+	Filename   string `yaml:"filename,omitempty" toml:"filename,omitempty" json:"filename,omitempty"`
+	MaxSize    int    `yaml:"max-size,omitempty" toml:"max-size,omitempty" json:"max-size,omitempty"`
+	MaxDays    int    `yaml:"max-days,omitempty" toml:"max-days,omitempty" json:"max-days,omitempty"`
+	MaxBackups int    `yaml:"max-backups,omitempty" toml:"max-backups,omitempty" json:"max-backups,omitempty"`
 }
 
 type TLSConfig struct {
-	Cert               string `yaml:"cert,omitempty" toml:"cert,omitempty" json:"cert,omitempty" reloadable:"true"`
-	Key                string `yaml:"key,omitempty" toml:"key,omitempty" json:"key,omitempty" reloadable:"true"`
-	CA                 string `yaml:"ca,omitempty" toml:"ca,omitempty" json:"ca,omitempty" reloadable:"true"`
-	MinTLSVersion      string `yaml:"min-tls-version,omitempty" toml:"min-tls-version,omitempty" json:"min-tls-version,omitempty" reloadable:"true"`
-	AutoCerts          bool   `yaml:"auto-certs,omitempty" toml:"auto-certs,omitempty" json:"auto-certs,omitempty" reloadable:"true"`
-	RSAKeySize         int    `yaml:"rsa-key-size,omitempty" toml:"rsa-key-size,omitempty" json:"rsa-key-size,omitempty" reloadable:"true"`
-	AutoExpireDuration string `yaml:"autocert-expire-duration,omitempty" toml:"autocert-expire-duration,omitempty" json:"autocert-expire-duration,omitempty" reloadable:"true"`
-	SkipCA             bool   `yaml:"skip-ca,omitempty" toml:"skip-ca,omitempty" json:"skip-ca,omitempty" reloadable:"true"`
+	Cert               string `yaml:"cert,omitempty" toml:"cert,omitempty" json:"cert,omitempty"`
+	Key                string `yaml:"key,omitempty" toml:"key,omitempty" json:"key,omitempty"`
+	CA                 string `yaml:"ca,omitempty" toml:"ca,omitempty" json:"ca,omitempty"`
+	MinTLSVersion      string `yaml:"min-tls-version,omitempty" toml:"min-tls-version,omitempty" json:"min-tls-version,omitempty"`
+	AutoCerts          bool   `yaml:"auto-certs,omitempty" toml:"auto-certs,omitempty" json:"auto-certs,omitempty"`
+	RSAKeySize         int    `yaml:"rsa-key-size,omitempty" toml:"rsa-key-size,omitempty" json:"rsa-key-size,omitempty"`
+	AutoExpireDuration string `yaml:"autocert-expire-duration,omitempty" toml:"autocert-expire-duration,omitempty" json:"autocert-expire-duration,omitempty"`
+	SkipCA             bool   `yaml:"skip-ca,omitempty" toml:"skip-ca,omitempty" json:"skip-ca,omitempty"`
 }
 
 func (c TLSConfig) HasCert() bool {
@@ -113,7 +107,7 @@ func (c TLSConfig) HasCA() bool {
 type Security struct {
 	ServerSQLTLS      TLSConfig `yaml:"server-tls,omitempty" toml:"server-tls,omitempty" json:"server-tls,omitempty"`
 	SQLTLS            TLSConfig `yaml:"sql-tls,omitempty" toml:"sql-tls,omitempty" json:"sql-tls,omitempty"`
-	RequireBackendTLS bool      `yaml:"require-backend-tls,omitempty" toml:"require-backend-tls,omitempty" json:"require-backend-tls,omitempty" reloadable:"true"`
+	RequireBackendTLS bool      `yaml:"require-backend-tls,omitempty" toml:"require-backend-tls,omitempty" json:"require-backend-tls,omitempty"`
 }
 
 func DefaultKeepAlive() (frontend, backendHealthy, backendUnhealthy KeepAlive) {
@@ -197,12 +191,6 @@ func (cfg *Config) Check() error {
 		hc.DialTimeout = 3 * time.Second
 	}
 	return nil
-}
-
-func (cfg *Config) ToBytes() ([]byte, error) {
-	b := new(bytes.Buffer)
-	err := toml.NewEncoder(b).Encode(cfg)
-	return b.Bytes(), errors.WithStack(err)
 }
 
 func (cfg *Config) GetIPPort() (ip, port string, err error) {

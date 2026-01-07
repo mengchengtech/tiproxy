@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,14 +24,12 @@ var testProxyConfig = Config{
 	},
 	Log: Log{
 		Encoder: "tidb",
-		LogOnline: LogOnline{
-			Level: "info",
-			LogFile: LogFile{
-				Filename:   ".",
-				MaxSize:    10,
-				MaxDays:    1,
-				MaxBackups: 1,
-			},
+		Level:   "info",
+		LogFile: LogFile{
+			Filename:   ".",
+			MaxSize:    10,
+			MaxDays:    1,
+			MaxBackups: 1,
 		},
 	},
 	Security: Security{
@@ -52,17 +49,6 @@ var testProxyConfig = Config{
 		},
 		RequireBackendTLS: true,
 	},
-}
-
-func TestProxyConfig(t *testing.T) {
-	data1, err := testProxyConfig.ToBytes()
-	require.NoError(t, err)
-	var cfg Config
-	err = toml.Unmarshal(data1, &cfg)
-	require.NoError(t, err)
-	data2, err := cfg.ToBytes()
-	require.NoError(t, err)
-	require.Equal(t, data1, data2)
 }
 
 func TestProxyCheck(t *testing.T) {

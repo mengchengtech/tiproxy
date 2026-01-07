@@ -39,7 +39,7 @@ func buildLevel(cfg *config.Log) (zap.AtomicLevel, error) {
 
 func buildSyncer(cfg *config.Log) (*AtomicWriteSyncer, error) {
 	syncer := &AtomicWriteSyncer{}
-	if err := syncer.Rebuild(&cfg.LogOnline); err != nil {
+	if err := syncer.Rebuild(cfg); err != nil {
 		return nil, err
 	}
 	return syncer, nil

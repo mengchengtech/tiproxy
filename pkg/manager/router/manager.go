@@ -18,7 +18,7 @@ import (
 
 type RouterManager interface {
 	GetRouter() router.Router
-	Init(logger *zap.Logger, cfgMgr *mconfig.ConfigManager) error
+	Init(logger *zap.Logger, cfgMgr mconfig.ConfigManager) error
 }
 
 type routerManager struct {
@@ -34,7 +34,7 @@ func NewRouterManager() RouterManager {
 	return &routerManager{}
 }
 
-func (n *routerManager) Init(logger *zap.Logger, cfgMgr *mconfig.ConfigManager) error {
+func (n *routerManager) Init(logger *zap.Logger, cfgMgr mconfig.ConfigManager) error {
 	cfg := cfgMgr.GetConfig()
 	// init BackendFetcher
 	fetcher := observer.NewStaticFetcher(cfg.Proxy.Backend.Instances)

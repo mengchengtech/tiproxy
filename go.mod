@@ -15,7 +15,6 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.4
 	github.com/tiancaiamao/gp v0.0.0-20230126082955-4f9e4f1ed9b5
-	github.com/tidwall/btree v1.5.2
 	go.uber.org/atomic v1.11.0
 	go.uber.org/zap v1.26.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1

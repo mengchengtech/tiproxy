@@ -22,9 +22,6 @@ type LoggerManager struct {
 func NewLoggerManager(cfg *config.Log) (*LoggerManager, *zap.Logger, error) {
 	lm := &LoggerManager{}
 	var err error
-	if cfg == nil {
-		cfg = &config.NewConfig().Log
-	}
 	mainLogger, syncer, level, err := lg.BuildLogger(cfg)
 	if err != nil {
 		return nil, nil, err
