@@ -7,8 +7,8 @@ import (
 	"crypto/tls"
 	"io"
 
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/pkg/util/bufio"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/util/bufio"
 )
 
 // tlsHandshakeConn is only used as the underlying connection in tls.Conn.

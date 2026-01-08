@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/go-mysql-org/go-mysql/mysql"
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/capture"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/capture"
 	"go.uber.org/zap"
 )
 

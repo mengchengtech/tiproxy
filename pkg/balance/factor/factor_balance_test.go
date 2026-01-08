@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/lib/util/waitgroup"
-	"github.com/pingcap/tiproxy/pkg/balance/policy"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/pkg/balance/policy"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )

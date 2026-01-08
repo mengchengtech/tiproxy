@@ -3,7 +3,7 @@
 
 package namespace
 
-import "github.com/pingcap/tiproxy/lib/util/errors"
+import "github.com/mengchengtech/cerberus/lib/util/errors"
 
 var (
 	ErrDuplicatedUser      = errors.New("duplicated user")

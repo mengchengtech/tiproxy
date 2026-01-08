@@ -21,10 +21,10 @@ DEBUG ?=
 DOCKERPREFIX ?=
 BUILD_TAGS ?=
 LDFLAGS ?=
-LDFLAGS += -X "github.com/pingcap/tiproxy/pkg/util/versioninfo.TiProxyVersion=$(VERSION)"
-LDFLAGS += -X "github.com/pingcap/tiproxy/pkg/util/versioninfo.TiProxyGitBranch=$(BRANCH)"
-LDFLAGS += -X "github.com/pingcap/tiproxy/pkg/util/versioninfo.TiProxyGitHash=$(COMMIT)"
-LDFLAGS += -X "github.com/pingcap/tiproxy/pkg/util/versioninfo.TiProxyBuildTS=$(shell date -u '+%Y-%m-%d %H:%M:%S')"
+LDFLAGS += -X "github.com/mengchengtech/cerberus/pkg/util/versioninfo.TiProxyVersion=$(VERSION)"
+LDFLAGS += -X "github.com/mengchengtech/cerberus/pkg/util/versioninfo.TiProxyGitBranch=$(BRANCH)"
+LDFLAGS += -X "github.com/mengchengtech/cerberus/pkg/util/versioninfo.TiProxyGitHash=$(COMMIT)"
+LDFLAGS += -X "github.com/mengchengtech/cerberus/pkg/util/versioninfo.TiProxyBuildTS=$(shell date -u '+%Y-%m-%d %H:%M:%S')"
 
 BUILDFLAGS ?= -gcflags '$(GCFLAGS)' -ldflags '$(LDFLAGS)' -tags '$(BUILD_TAGS)'
 ifneq ("$(DEBUG)", "")

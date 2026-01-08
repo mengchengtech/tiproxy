@@ -8,13 +8,13 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/lib/util/cmd"
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/pkg/metrics"
-	"github.com/pingcap/tiproxy/pkg/sctx"
-	"github.com/pingcap/tiproxy/pkg/server"
-	"github.com/pingcap/tiproxy/pkg/util/versioninfo"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/lib/util/cmd"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/metrics"
+	"github.com/mengchengtech/cerberus/pkg/sctx"
+	"github.com/mengchengtech/cerberus/pkg/server"
+	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
 	"github.com/spf13/cobra"
 )
 

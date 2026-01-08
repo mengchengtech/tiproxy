@@ -7,8 +7,8 @@ import (
 	"errors"
 	"time"
 
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/cmd"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/cmd"
 	"github.com/siddontang/go/hack"
 )
 

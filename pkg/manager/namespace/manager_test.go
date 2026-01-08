@@ -6,7 +6,7 @@ package namespace
 import (
 	"testing"
 
-	"github.com/pingcap/tiproxy/pkg/balance/router"
+	"github.com/mengchengtech/cerberus/pkg/balance/router"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )

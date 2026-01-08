@@ -5,10 +5,10 @@ package backend
 
 import (
 	"github.com/go-mysql-org/go-mysql/mysql"
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/pkg/balance/router"
-	"github.com/pingcap/tiproxy/pkg/manager/namespace"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/balance/router"
+	"github.com/mengchengtech/cerberus/pkg/manager/namespace"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"go.uber.org/zap"
 )
 

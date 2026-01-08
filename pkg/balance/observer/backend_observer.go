@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/lib/util/waitgroup"
-	"github.com/pingcap/tiproxy/pkg/metrics"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"go.uber.org/zap"
 )
 

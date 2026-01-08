@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/pkg/balance/metricsreader"
+	"github.com/mengchengtech/cerberus/pkg/balance/metricsreader"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/require"

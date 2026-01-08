@@ -7,9 +7,9 @@ import (
 	"crypto/tls"
 	"time"
 
-	"github.com/pingcap/tiproxy/pkg/proxy/backend"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/capture"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/replay"
+	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/capture"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/replay"
 )
 
 var _ CertManager = (*mockCertMgr)(nil)

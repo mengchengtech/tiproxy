@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/cmd"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/cmd"
 	"go.uber.org/zap"
 )
 

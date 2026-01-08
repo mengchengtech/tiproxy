@@ -4,8 +4,8 @@
 package policy
 
 import (
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/pkg/balance/observer"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"go.uber.org/zap"
 )
 

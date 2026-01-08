@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/pkg/manager/infosync"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/manager/infosync"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/require"
 )

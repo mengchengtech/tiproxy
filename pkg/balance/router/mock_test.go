@@ -10,9 +10,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/pkg/balance/observer"
-	"github.com/pingcap/tiproxy/pkg/balance/policy"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/balance/observer"
+	"github.com/mengchengtech/cerberus/pkg/balance/policy"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

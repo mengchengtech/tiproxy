@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 )
 
 type Client struct {

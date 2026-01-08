@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/lib/util/waitgroup"
-	"github.com/pingcap/tiproxy/pkg/balance/router"
-	"github.com/pingcap/tiproxy/pkg/metrics"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/pkg/balance/router"
+	"github.com/mengchengtech/cerberus/pkg/metrics"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )

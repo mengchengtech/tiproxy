@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/pkg/manager/cert"
-	"github.com/pingcap/tiproxy/pkg/util/etcd"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/manager/cert"
+	"github.com/mengchengtech/cerberus/pkg/util/etcd"
 	"github.com/stretchr/testify/require"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"

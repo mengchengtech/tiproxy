@@ -8,10 +8,10 @@ import (
 	"net"
 	"testing"
 
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/lib/util/security"
-	"github.com/pingcap/tiproxy/lib/util/waitgroup"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/lib/util/security"
+	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/stretchr/testify/require"
 )
 

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/pkg/metrics"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"github.com/stretchr/testify/require"
 )
 

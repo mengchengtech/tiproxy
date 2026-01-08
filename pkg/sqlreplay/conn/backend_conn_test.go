@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/pkg/proxy/backend"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )

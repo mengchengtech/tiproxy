@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/cli"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/capture"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/manager"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/replay"
+	"github.com/mengchengtech/cerberus/lib/cli"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/capture"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/manager"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/replay"
 	"github.com/stretchr/testify/require"
 )
 

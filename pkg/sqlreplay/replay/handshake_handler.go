@@ -4,8 +4,8 @@
 package replay
 
 import (
-	"github.com/pingcap/tiproxy/pkg/proxy/backend"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 )
 
 var _ backend.HandshakeHandler = (*handshakeHandler)(nil)

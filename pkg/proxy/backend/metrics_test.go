@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/pkg/metrics"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/metrics"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

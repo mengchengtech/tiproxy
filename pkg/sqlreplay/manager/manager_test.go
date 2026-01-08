@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/pkg/manager/id"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/capture"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/replay"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/manager/id"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/capture"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/replay"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )

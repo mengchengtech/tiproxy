@@ -8,10 +8,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/sctx"
+	"github.com/mengchengtech/cerberus/pkg/util/etcd"
 	"github.com/pelletier/go-toml/v2"
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/pkg/sctx"
-	"github.com/pingcap/tiproxy/pkg/util/etcd"
 	"github.com/stretchr/testify/require"
 )
 

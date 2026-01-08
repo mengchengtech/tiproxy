@@ -8,8 +8,8 @@ import (
 	"syscall"
 
 	"github.com/j-keck/arping"
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/pkg/util/cmd"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/util/cmd"
 	"github.com/vishvananda/netlink"
 )
 

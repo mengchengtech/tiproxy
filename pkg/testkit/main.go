@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/pingcap/tiproxy/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/stretchr/testify/require"
 )
 

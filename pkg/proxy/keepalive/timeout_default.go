@@ -6,7 +6,7 @@
 package keepalive
 
 import (
-	"github.com/pingcap/tiproxy/lib/config"
+	"github.com/mengchengtech/cerberus/lib/config"
 )
 
 func setTimeout(fd uintptr, cfg config.KeepAlive) error {

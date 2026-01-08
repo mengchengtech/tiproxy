@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pingcap/tiproxy/lib/util/errors"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
 )
 
 type output struct {

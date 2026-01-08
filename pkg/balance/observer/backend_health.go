@@ -8,7 +8,7 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/pingcap/tiproxy/lib/config"
+	"github.com/mengchengtech/cerberus/lib/config"
 )
 
 type BackendHealth struct {

@@ -12,8 +12,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/util/systimemon"
-	"github.com/pingcap/tiproxy/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/lib/util/systimemon"
+	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	dto "github.com/prometheus/client_model/go"

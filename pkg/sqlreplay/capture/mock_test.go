@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/store"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/store"
 )
 
 var _ store.Writer = (*mockWriter)(nil)

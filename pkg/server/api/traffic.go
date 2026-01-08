@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/capture"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/replay"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/capture"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/replay"
 )
 
 func (h *Server) registerTraffic(group *gin.RouterGroup) {

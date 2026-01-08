@@ -4,7 +4,7 @@
 package factor
 
 import (
-	"github.com/pingcap/tiproxy/pkg/balance/policy"
+	"github.com/mengchengtech/cerberus/pkg/balance/policy"
 	"go.uber.org/zap"
 )
 

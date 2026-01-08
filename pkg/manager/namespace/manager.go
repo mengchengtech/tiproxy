@@ -12,13 +12,13 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/pkg/balance/factor"
-	"github.com/pingcap/tiproxy/pkg/balance/metricsreader"
-	"github.com/pingcap/tiproxy/pkg/balance/observer"
-	"github.com/pingcap/tiproxy/pkg/balance/router"
-	mconfig "github.com/pingcap/tiproxy/pkg/manager/config"
-	"github.com/pingcap/tiproxy/pkg/util/http"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/balance/factor"
+	"github.com/mengchengtech/cerberus/pkg/balance/metricsreader"
+	"github.com/mengchengtech/cerberus/pkg/balance/observer"
+	"github.com/mengchengtech/cerberus/pkg/balance/router"
+	mconfig "github.com/mengchengtech/cerberus/pkg/manager/config"
+	"github.com/mengchengtech/cerberus/pkg/util/http"
 	"go.uber.org/zap"
 )
 

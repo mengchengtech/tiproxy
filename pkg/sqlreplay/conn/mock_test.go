@@ -8,7 +8,7 @@ import (
 	"crypto/tls"
 	"sync/atomic"
 
-	"github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/proxy/net"
 )
 
 var _ BackendConnManager = (*mockBackendConnMgr)(nil)

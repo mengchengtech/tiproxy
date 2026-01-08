@@ -10,9 +10,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	lg "github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/lib/util/security"
+	"github.com/mengchengtech/cerberus/lib/config"
+	lg "github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/lib/util/security"
 	"github.com/spf13/cobra"
 )
 

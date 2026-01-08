@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/cmd"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/conn"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/cmd"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/conn"
 	"github.com/stretchr/testify/require"
 )
 

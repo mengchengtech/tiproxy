@@ -3,7 +3,7 @@
 
 package server
 
-import "github.com/pingcap/tiproxy/lib/util/errors"
+import "github.com/mengchengtech/cerberus/lib/util/errors"
 
 var (
 	ErrCloseServer = errors.New("failed to close server")

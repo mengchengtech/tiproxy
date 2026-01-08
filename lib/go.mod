@@ -1,4 +1,4 @@
-module github.com/pingcap/tiproxy/lib
+module github.com/mengchengtech/cerberus/lib
 
 go 1.21
 

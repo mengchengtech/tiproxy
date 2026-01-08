@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	serr "github.com/pingcap/tiproxy/lib/util/errors"
+	serr "github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/stretchr/testify/require"
 )
 

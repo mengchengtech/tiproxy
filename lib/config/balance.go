@@ -3,7 +3,7 @@
 
 package config
 
-import "github.com/pingcap/tiproxy/lib/util/errors"
+import "github.com/mengchengtech/cerberus/lib/util/errors"
 
 const (
 	BalancePolicyResource   = "resource"

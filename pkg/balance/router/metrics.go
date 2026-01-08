@@ -6,7 +6,7 @@ package router
 import (
 	"time"
 
-	"github.com/pingcap/tiproxy/pkg/metrics"
+	"github.com/mengchengtech/cerberus/pkg/metrics"
 )
 
 func setBackendConnMetrics(addr string, conns int) {

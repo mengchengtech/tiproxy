@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pingcap/tiproxy/lib/util/logger"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 )

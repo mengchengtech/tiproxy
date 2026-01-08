@@ -8,8 +8,8 @@ import (
 	"time"
 
 	glist "github.com/bahlo/generic-list-go"
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/pkg/balance/observer"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"go.uber.org/zap"
 )
 

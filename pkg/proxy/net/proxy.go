@@ -8,8 +8,8 @@ import (
 	"net"
 	"sync/atomic"
 
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/pkg/proxy/proxyprotocol"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/proxy/proxyprotocol"
 )
 
 func (p *packetIO) EnableProxyClient(proxy *proxyprotocol.Proxy) {

@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pingcap/tiproxy/lib/cli"
-	"github.com/pingcap/tiproxy/lib/util/cmd"
-	"github.com/pingcap/tiproxy/pkg/util/versioninfo"
+	"github.com/mengchengtech/cerberus/lib/cli"
+	"github.com/mengchengtech/cerberus/lib/util/cmd"
+	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
 )
 
 func main() {

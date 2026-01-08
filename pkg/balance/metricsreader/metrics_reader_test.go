@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	httputil "github.com/pingcap/tiproxy/pkg/util/http"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	httputil "github.com/mengchengtech/cerberus/pkg/util/http"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/require"

@@ -9,7 +9,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/pingcap/tiproxy/pkg/testkit"
+	"github.com/mengchengtech/cerberus/pkg/testkit"
 	"github.com/stretchr/testify/require"
 )
 

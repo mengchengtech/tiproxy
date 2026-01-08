@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/pingcap/tiproxy/lib/config"
+	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/stretchr/testify/require"
 )
 

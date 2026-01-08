@@ -5,7 +5,7 @@ package sctx
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/pingcap/tiproxy/pkg/proxy/backend"
+	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 )
 
 type Context struct {

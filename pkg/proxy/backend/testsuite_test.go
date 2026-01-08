@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pingcap/tiproxy/pkg/balance/router"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/balance/router"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/stretchr/testify/require"
 )
 

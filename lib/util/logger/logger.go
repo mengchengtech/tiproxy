@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/config"
+	"github.com/mengchengtech/cerberus/lib/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

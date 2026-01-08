@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/pingcap/tiproxy/lib/util/errors"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"go.uber.org/zap"
 )
 

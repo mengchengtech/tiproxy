@@ -10,10 +10,10 @@ import (
 	"io"
 	"time"
 
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/cmd"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/conn"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/report"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/cmd"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/conn"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/report"
 )
 
 var _ conn.Conn = (*mockConn)(nil)

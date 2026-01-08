@@ -1,4 +1,4 @@
-module github.com/pingcap/tiproxy
+module github.com/mengchengtech/cerberus
 
 go 1.21
 
@@ -13,12 +13,12 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/j-keck/arping v1.0.3
 	github.com/klauspost/compress v1.16.6
+	github.com/mengchengtech/cerberus/lib v0.0.0-00010101000000-000000000000
 	github.com/pelletier/go-toml/v2 v2.0.5
 	github.com/pingcap/kvproto v0.0.0-20231018065736-c0689aded40c
 	github.com/pingcap/sysutil v1.0.0
 	github.com/pingcap/tidb v1.1.0-beta.0.20230103132820-3ccff46aa3bc
 	github.com/pingcap/tidb/parser v0.0.0-20230103132820-3ccff46aa3bc
-	github.com/pingcap/tiproxy/lib v0.0.0-00010101000000-000000000000
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/client_model v0.3.0
 	github.com/prometheus/common v0.39.0
@@ -123,4 +123,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/pingcap/tiproxy/lib => ./lib
+replace github.com/mengchengtech/cerberus/lib => ./lib

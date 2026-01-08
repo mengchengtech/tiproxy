@@ -8,12 +8,12 @@ import (
 	"errors"
 	"sync/atomic"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/pkg/balance/metricsreader"
-	"github.com/pingcap/tiproxy/pkg/balance/observer"
-	mconfig "github.com/pingcap/tiproxy/pkg/manager/config"
-	"github.com/pingcap/tiproxy/pkg/manager/namespace"
-	"github.com/pingcap/tiproxy/pkg/util/http"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/pkg/balance/metricsreader"
+	"github.com/mengchengtech/cerberus/pkg/balance/observer"
+	mconfig "github.com/mengchengtech/cerberus/pkg/manager/config"
+	"github.com/mengchengtech/cerberus/pkg/manager/namespace"
+	"github.com/mengchengtech/cerberus/pkg/util/http"
 	"go.uber.org/zap"
 )
 

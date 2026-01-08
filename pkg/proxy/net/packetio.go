@@ -30,13 +30,13 @@ import (
 	"net"
 	"time"
 
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
+	"github.com/mengchengtech/cerberus/pkg/proxy/keepalive"
+	"github.com/mengchengtech/cerberus/pkg/proxy/proxyprotocol"
+	"github.com/mengchengtech/cerberus/pkg/util/bufio"
 	"github.com/pingcap/tidb/errno"
 	"github.com/pingcap/tidb/util/dbterror"
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/lib/util/errors"
-	"github.com/pingcap/tiproxy/pkg/proxy/keepalive"
-	"github.com/pingcap/tiproxy/pkg/proxy/proxyprotocol"
-	"github.com/pingcap/tiproxy/pkg/util/bufio"
 	"go.uber.org/zap"
 )
 

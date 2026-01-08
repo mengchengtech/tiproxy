@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pingcap/tiproxy/pkg/balance/policy"
+	"github.com/mengchengtech/cerberus/pkg/balance/policy"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"

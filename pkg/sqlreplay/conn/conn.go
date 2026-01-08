@@ -11,10 +11,10 @@ import (
 	"sync/atomic"
 
 	glist "github.com/bahlo/generic-list-go"
-	"github.com/pingcap/tiproxy/pkg/manager/id"
-	"github.com/pingcap/tiproxy/pkg/proxy/backend"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/cmd"
+	"github.com/mengchengtech/cerberus/pkg/manager/id"
+	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/cmd"
 	"go.uber.org/zap"
 )
 

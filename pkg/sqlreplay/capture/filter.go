@@ -4,7 +4,7 @@
 package capture
 
 import (
-	"github.com/pingcap/tiproxy/pkg/util/lex"
+	"github.com/mengchengtech/cerberus/pkg/util/lex"
 )
 
 var sensitiveKeywords = [][]string{

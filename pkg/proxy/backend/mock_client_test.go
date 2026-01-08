@@ -7,7 +7,7 @@ import (
 	"crypto/tls"
 	"encoding/binary"
 
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 )
 
 type clientConfig struct {

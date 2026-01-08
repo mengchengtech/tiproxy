@@ -7,9 +7,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	lg "github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/lib/config"
+	lg "github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

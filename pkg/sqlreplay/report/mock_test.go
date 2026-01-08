@@ -7,7 +7,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/conn"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/conn"
 )
 
 var _ ReportDB = (*mockReportDB)(nil)

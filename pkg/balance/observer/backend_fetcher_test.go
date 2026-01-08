@@ -7,8 +7,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/pkg/manager/infosync"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/manager/infosync"
 	"github.com/stretchr/testify/require"
 )
 

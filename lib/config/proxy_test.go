@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/pingcap/tiproxy/lib/util/sys"
+	"github.com/mengchengtech/cerberus/lib/util/sys"
 	"github.com/stretchr/testify/require"
 )
 

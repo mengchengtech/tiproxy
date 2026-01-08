@@ -11,8 +11,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/pingcap/tiproxy/pkg/proxy/backend"
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/siddontang/go/hack"
 	"go.uber.org/zap"
 )

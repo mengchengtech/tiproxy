@@ -8,8 +8,8 @@ import (
 	"crypto/tls"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/util/waitgroup"
-	"github.com/pingcap/tiproxy/pkg/sqlreplay/conn"
+	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
+	"github.com/mengchengtech/cerberus/pkg/sqlreplay/conn"
 	"go.uber.org/zap"
 )
 

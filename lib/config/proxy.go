@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/pingcap/tiproxy/lib/util/errors"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
 )
 
 var (

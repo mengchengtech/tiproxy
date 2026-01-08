@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/pingcap/tiproxy/lib/util/errors"
+	"github.com/mengchengtech/cerberus/lib/util/errors"
 )
 
 // ExecCmd executes commands with checking potential tainted input.

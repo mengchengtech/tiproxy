@@ -3,7 +3,7 @@
 
 package policy
 
-import "github.com/pingcap/tiproxy/pkg/balance/observer"
+import "github.com/mengchengtech/cerberus/pkg/balance/observer"
 
 var _ BackendCtx = (*mockBackend)(nil)
 

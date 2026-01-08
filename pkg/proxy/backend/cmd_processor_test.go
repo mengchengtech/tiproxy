@@ -6,7 +6,7 @@ package backend
 import (
 	"testing"
 
-	pnet "github.com/pingcap/tiproxy/pkg/proxy/net"
+	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/stretchr/testify/require"
 )
 

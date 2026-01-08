@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pingcap/tiproxy/lib/config"
-	"github.com/pingcap/tiproxy/lib/util/logger"
-	"github.com/pingcap/tiproxy/pkg/manager/cert"
-	"github.com/pingcap/tiproxy/pkg/util/etcd"
+	"github.com/mengchengtech/cerberus/lib/config"
+	"github.com/mengchengtech/cerberus/lib/util/logger"
+	"github.com/mengchengtech/cerberus/pkg/manager/cert"
+	"github.com/mengchengtech/cerberus/pkg/util/etcd"
 	"github.com/stretchr/testify/require"
 )
 
