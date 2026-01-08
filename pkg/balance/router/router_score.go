@@ -16,7 +16,6 @@ import (
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"github.com/mengchengtech/cerberus/pkg/balance/policy"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"go.uber.org/zap"
 )
 
@@ -158,13 +157,11 @@ func (router *ScoreBasedRouter) onCreateConn(backendInst BackendInst, conn Redir
 
 func (router *ScoreBasedRouter) removeConn(backend *backendWrapper, ce *glist.Element[*connWrapper]) {
 	backend.connList.Remove(ce)
-	setBackendConnMetrics(backend.addr, backend.connList.Len())
 	router.removeBackendIfEmpty(backend)
 }
 
 func (router *ScoreBasedRouter) addConn(backend *backendWrapper, conn *connWrapper) {
 	ce := backend.connList.PushBack(conn)
-	setBackendConnMetrics(backend.addr, backend.connList.Len())
 	router.setConnWrapper(conn, ce)
 }
 
@@ -185,9 +182,7 @@ func (router *ScoreBasedRouter) RedirectConnections() error {
 			if connWrapper.phase != phaseRedirectNotify {
 				connWrapper.phase = phaseRedirectNotify
 				connWrapper.redirectReason = "test"
-				if connWrapper.Redirect(backend) {
-					metrics.PendingMigrateGuage.WithLabelValues(backend.addr, backend.addr, connWrapper.redirectReason).Inc()
-				}
+				connWrapper.Redirect(backend)
 			}
 		}
 	}
@@ -231,7 +226,6 @@ func (router *ScoreBasedRouter) onRedirectFinished(from, to string, conn Redirec
 	fromBackend := router.ensureBackend(from)
 	toBackend := router.ensureBackend(to)
 	connWrapper := router.getConnWrapper(conn).Value
-	addMigrateMetrics(from, to, connWrapper.redirectReason, succeed, connWrapper.lastRedirect)
 	// The connection may be closed when this function is waiting for the lock.
 	if connWrapper.phase == phaseClosed {
 		return
@@ -260,7 +254,6 @@ func (router *ScoreBasedRouter) OnConnClosed(addr, redirectingAddr string, conn 
 		redirectingBackend := router.ensureBackend(redirectingAddr)
 		redirectingBackend.connScore--
 		router.removeBackendIfEmpty(redirectingBackend)
-		metrics.PendingMigrateGuage.WithLabelValues(addr, redirectingAddr, connWrapper.Value.redirectReason).Dec()
 	} else {
 		backend.connScore--
 	}
@@ -407,7 +400,6 @@ func (router *ScoreBasedRouter) redirectConn(conn *connWrapper, fromBackend *bac
 		toBackend.connScore++
 		conn.phase = phaseRedirectNotify
 		conn.redirectReason = reason
-		metrics.PendingMigrateGuage.WithLabelValues(fromBackend.addr, toBackend.addr, reason).Inc()
 	} else {
 		// Avoid it to be redirected again immediately.
 		conn.phase = phaseRedirectFail

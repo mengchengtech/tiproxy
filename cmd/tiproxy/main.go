@@ -6,12 +6,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/cmd"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
 	"github.com/mengchengtech/cerberus/pkg/server"
 	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
@@ -35,8 +33,6 @@ func main() {
 	rootCmd.PersistentFlags().StringVar(&deprecatedStr, "log_level", "", "deprecated and will be removed")
 	rootCmd.PersistentFlags().StringVar(&sctx.AdvertiseAddr, "advertise-addr", "", "advertise address")
 	rootCmd.PersistentFlags().StringVar(&configInfo, "config-info", "", "output config info and exit")
-
-	metrics.MaxProcsGauge.Set(float64(runtime.GOMAXPROCS(0)))
 
 	rootCmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		if configInfo != "" {

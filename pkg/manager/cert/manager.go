@@ -13,7 +13,6 @@ import (
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/lib/util/security"
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"go.uber.org/zap"
 )
 
@@ -145,7 +144,6 @@ func (cm *CertManager) reload() error {
 	}
 	var err error
 	if len(errs) > 0 {
-		metrics.ServerErrCounter.WithLabelValues("load_cert").Add(float64(len(errs)))
 		err = errors.Collect(errors.New("loading certs"), errs...)
 		cm.logger.Error("failed to reload some certs", zap.Error(err))
 	}

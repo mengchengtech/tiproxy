@@ -23,7 +23,6 @@ import (
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/mengchengtech/cerberus/pkg/sqlreplay/capture"
 	"github.com/pingcap/tidb/parser"
@@ -222,7 +221,6 @@ func (mgr *BackendConnManager) Connect(ctx context.Context, clientIO pnet.Packet
 	}
 	mgr.handshakeHandler.OnHandshake(mgr, mgr.ServerAddr(), nil, SrcNone)
 	endTime := time.Now()
-	addHandshakeMetrics(mgr.ServerAddr(), endTime.Sub(startTime))
 	mgr.updateTraffic(*mgr.backendIO.Load())
 
 	mgr.cmdProcessor.capability = mgr.authenticator.capability
@@ -285,7 +283,6 @@ func (mgr *BackendConnManager) getBackendIO(ctx context.Context, cctx ConnContex
 			cn, err = net.DialTimeout("tcp", addr, DialTimeout)
 			selector.Finish(mgr, err == nil)
 			if err != nil {
-				metrics.DialBackendFailCounter.WithLabelValues(addr).Inc()
 				return nil, errors.Wrap(errors.Wrapf(err, "dial backend %s error", addr), ErrBackendHandshake)
 			}
 
@@ -307,7 +304,6 @@ func (mgr *BackendConnManager) getBackendIO(ctx context.Context, cctx ConnContex
 	cancel()
 
 	duration := time.Since(startTime)
-	addGetBackendMetrics(duration, err == nil)
 	if err != nil {
 		mgr.logger.Error("get backend failed", zap.Duration("duration", duration), zap.NamedError("last_err", origErr))
 	} else if duration >= time.Second {
@@ -368,7 +364,6 @@ func (mgr *BackendConnManager) ExecuteCmd(ctx context.Context, request []byte) (
 	backendIO := *mgr.backendIO.Load()
 	holdRequest, err = mgr.cmdProcessor.executeCmd(request, mgr.clientIO, backendIO, waitingRedirect)
 	if !holdRequest {
-		addCmdMetrics(cmd, backendIO.RemoteAddr().String(), startTime)
 		mgr.updateTraffic(backendIO)
 	}
 	if err != nil {
@@ -413,7 +408,6 @@ func (mgr *BackendConnManager) ExecuteCmd(ctx context.Context, request []byte) (
 	if holdRequest && mgr.closeStatus.Load() < statusNotifyClose {
 		backendIO = *mgr.backendIO.Load()
 		_, err = mgr.cmdProcessor.executeCmd(request, mgr.clientIO, backendIO, false)
-		addCmdMetrics(cmd, backendIO.RemoteAddr().String(), startTime)
 		mgr.updateTraffic(backendIO)
 	}
 	return
@@ -421,7 +415,6 @@ func (mgr *BackendConnManager) ExecuteCmd(ctx context.Context, request []byte) (
 
 func (mgr *BackendConnManager) updateTraffic(backendIO pnet.PacketIO) {
 	inBytes, inPackets, outBytes, outPackets := backendIO.InBytes(), backendIO.InPackets(), backendIO.OutBytes(), backendIO.OutPackets()
-	addTraffic(backendIO.RemoteAddr().String(), inBytes-mgr.inBytes, inPackets-mgr.inPackets, outBytes-mgr.outBytes, outPackets-mgr.outPackets, mgr.curBackend.Local())
 	mgr.inBytes, mgr.inPackets, mgr.outBytes, mgr.outPackets = inBytes, inPackets, outBytes, outPackets
 }
 

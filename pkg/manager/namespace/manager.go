@@ -14,7 +14,6 @@ import (
 
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/pkg/balance/factor"
-	"github.com/mengchengtech/cerberus/pkg/balance/metricsreader"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
 	mconfig "github.com/mengchengtech/cerberus/pkg/manager/config"
@@ -24,8 +23,7 @@ import (
 
 type NamespaceManager interface {
 	Init(logger *zap.Logger, nscs []*config.Namespace, tpFetcher observer.TopologyFetcher,
-		promFetcher metricsreader.PromInfoFetcher, httpCli *http.Client, cfgMgr *mconfig.ConfigManager,
-		metricsReader metricsreader.MetricsReader) error
+		httpCli *http.Client, cfgMgr *mconfig.ConfigManager) error
 	CommitNamespaces(nss []*config.Namespace, nssDelete []bool) error
 	GetNamespace(nm string) (*Namespace, bool)
 	GetNamespaceByUser(user string) (*Namespace, bool)
@@ -36,13 +34,11 @@ type NamespaceManager interface {
 
 type namespaceManager struct {
 	sync.RWMutex
-	nsm           map[string]*Namespace
-	tpFetcher     observer.TopologyFetcher
-	promFetcher   metricsreader.PromInfoFetcher
-	metricsReader metricsreader.MetricsReader
-	httpCli       *http.Client
-	logger        *zap.Logger
-	cfgMgr        *mconfig.ConfigManager
+	nsm       map[string]*Namespace
+	tpFetcher observer.TopologyFetcher
+	httpCli   *http.Client
+	logger    *zap.Logger
+	cfgMgr    *mconfig.ConfigManager
 }
 
 func NewNamespaceManager() *namespaceManager {
@@ -105,15 +101,12 @@ func (mgr *namespaceManager) CommitNamespaces(nss []*config.Namespace, nssDelete
 }
 
 func (mgr *namespaceManager) Init(logger *zap.Logger, nscs []*config.Namespace, tpFetcher observer.TopologyFetcher,
-	promFetcher metricsreader.PromInfoFetcher, httpCli *http.Client, cfgMgr *mconfig.ConfigManager,
-	metricsReader metricsreader.MetricsReader) error {
+	httpCli *http.Client, cfgMgr *mconfig.ConfigManager) error {
 	mgr.Lock()
 	mgr.tpFetcher = tpFetcher
-	mgr.promFetcher = promFetcher
 	mgr.httpCli = httpCli
 	mgr.logger = logger
 	mgr.cfgMgr = cfgMgr
-	mgr.metricsReader = metricsReader
 	mgr.Unlock()
 	return mgr.CommitNamespaces(nscs, nil)
 }

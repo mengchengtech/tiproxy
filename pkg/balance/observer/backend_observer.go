@@ -11,7 +11,6 @@ import (
 
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"go.uber.org/zap"
 )
 
@@ -20,8 +19,6 @@ const (
 	// If the pool is full, it will still create new goroutines, but not return to the pool after use.
 	goPoolSize = 100
 	goMaxIdle  = time.Minute
-	// The backend metric is retained for 2 hours after it's down.
-	backendMetricRetention = 2 * time.Hour
 )
 
 var _ BackendObserver = (*DefaultBackendObserver)(nil)
@@ -101,11 +98,9 @@ func (bo *DefaultBackendObserver) observe(ctx context.Context) {
 			result.backends = bo.checkHealth(ctx, backendInfo)
 		}
 		bo.updateHealthResult(result)
-		bo.purgeBackendMetrics()
 		bo.notifySubscribers(ctx, result)
 
 		cost := time.Since(startTime)
-		metrics.HealthCheckCycleGauge.Set(cost.Seconds())
 		wait := bo.healthCheckConfig.Interval - cost
 		if wait > 0 {
 			select {
@@ -152,22 +147,6 @@ func (bo *DefaultBackendObserver) checkHealth(ctx context.Context, backends map[
 	return curBackendHealth
 }
 
-// If a backend has been down for more than backendMetricRetention, remove it from the metrics.
-// For auto-scaling case, the metrics will occupy too much volume after weeks.
-func (bo *DefaultBackendObserver) purgeBackendMetrics() {
-	if len(bo.downBackends) == 0 {
-		return
-	}
-	now := time.Now()
-	for addr, ts := range bo.downBackends {
-		if ts.Add(backendMetricRetention).Before(now) {
-			bo.logger.Info("backend is down for too long, purging backend metrics", zap.String("backend", addr))
-			metrics.DelBackend(addr)
-			delete(bo.downBackends, addr)
-		}
-	}
-}
-
 func (bo *DefaultBackendObserver) Subscribe(name string) <-chan HealthResult {
 	ch := make(chan HealthResult, 1)
 	bo.Lock()
@@ -196,7 +175,6 @@ func (bo *DefaultBackendObserver) updateHealthResult(result HealthResult) {
 		if oldHealth, ok := bo.curBackends[addr]; !ok || !oldHealth.Healthy {
 			bo.logger.Info("update backend", zap.String("addr", addr), zap.Stringer("prev", oldHealth), zap.Stringer("cur", newHealth),
 				zap.Int("total", len(bo.curBackends)))
-			updateBackendStatusMetrics(addr, true)
 			delete(bo.downBackends, addr)
 		} else if ok && !maps.Equal(oldHealth.Labels, newHealth.Labels) {
 			bo.logger.Info("update backend labels", zap.String("addr", addr),
@@ -210,7 +188,6 @@ func (bo *DefaultBackendObserver) updateHealthResult(result HealthResult) {
 		if newHealth, ok := result.backends[addr]; !ok || !newHealth.Healthy {
 			bo.logger.Info("update backend", zap.String("addr", addr), zap.Stringer("prev", oldHealth), zap.Stringer("cur", newHealth),
 				zap.Int("total", len(bo.curBackends)))
-			updateBackendStatusMetrics(addr, false)
 			bo.downBackends[addr] = time.Now()
 		}
 	}

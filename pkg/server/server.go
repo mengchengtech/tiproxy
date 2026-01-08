@@ -11,7 +11,6 @@ import (
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
-	"github.com/mengchengtech/cerberus/pkg/balance/metricsreader"
 	"github.com/mengchengtech/cerberus/pkg/manager/cert"
 	mgrcfg "github.com/mengchengtech/cerberus/pkg/manager/config"
 	"github.com/mengchengtech/cerberus/pkg/manager/id"
@@ -19,7 +18,6 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/manager/logger"
 	mgrns "github.com/mengchengtech/cerberus/pkg/manager/namespace"
 	"github.com/mengchengtech/cerberus/pkg/manager/vip"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"github.com/mengchengtech/cerberus/pkg/proxy"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
@@ -38,12 +36,10 @@ type Server struct {
 	// managers
 	configManager    *mgrcfg.ConfigManager
 	namespaceManager mgrns.NamespaceManager
-	metricsManager   *metrics.MetricsManager
 	loggerManager    *logger.LoggerManager
 	certManager      *cert.CertManager
 	vipManager       vip.VIPManager
 	infoSyncer       *infosync.InfoSyncer
-	metricsReader    metricsreader.MetricsReader
 	replay           mgrrp.JobManager
 	// etcd client
 	etcdCli *clientv3.Client
@@ -58,7 +54,6 @@ type Server struct {
 func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error) {
 	srv = &Server{
 		configManager:    mgrcfg.NewConfigManager(),
-		metricsManager:   metrics.NewMetricsManager(),
 		namespaceManager: mgrns.NewNamespaceManager(),
 		certManager:      cert.NewCertManager(),
 	}
@@ -91,10 +86,6 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 	printInfo(lg)
 	srv.loggerManager.SetLoggerLevel(level)
 
-	// setup metrics
-	srv.metricsManager.Init(ctx, lg.Named("metrics"))
-	metrics.ServerEventCounter.WithLabelValues(metrics.EventStart).Inc()
-
 	// setup certs
 	if err = srv.certManager.Init(cfg, lg.Named("cert"), srv.configManager.WatchConfig()); err != nil {
 		return
@@ -115,15 +106,6 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 	if cfg.Proxy.PDAddrs != "" {
 		srv.infoSyncer = infosync.NewInfoSyncer(lg.Named("infosync"), srv.etcdCli)
 		if err = srv.infoSyncer.Init(ctx, cfg); err != nil {
-			return
-		}
-	}
-
-	// setup metrics reader
-	{
-		healthCheckCfg := config.NewDefaultHealthCheckConfig()
-		srv.metricsReader = metricsreader.NewDefaultMetricsReader(lg.Named("mr"), srv.infoSyncer, srv.infoSyncer, srv.httpCli, srv.etcdCli, healthCheckCfg, srv.configManager)
-		if err = srv.metricsReader.Start(context.Background()); err != nil {
 			return
 		}
 	}
@@ -150,7 +132,7 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 			nscs = append(nscs, nsc)
 		}
 
-		err = srv.namespaceManager.Init(lg.Named("nsmgr"), nscs, srv.infoSyncer, srv.infoSyncer, srv.httpCli, srv.configManager, srv.metricsReader)
+		err = srv.namespaceManager.Init(lg.Named("nsmgr"), nscs, srv.infoSyncer, srv.httpCli, srv.configManager)
 		if err != nil {
 			return
 		}
@@ -180,11 +162,10 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 
 	// setup http & grpc
 	mgrs := api.Managers{
-		CfgMgr:        srv.configManager,
-		NsMgr:         srv.namespaceManager,
-		CertMgr:       srv.certManager,
-		BackendReader: srv.metricsReader,
-		ReplayJobMgr:  srv.replay,
+		CfgMgr:       srv.configManager,
+		NsMgr:        srv.namespaceManager,
+		CertMgr:      srv.certManager,
+		ReplayJobMgr: srv.replay,
 	}
 	if srv.apiServer, err = api.NewServer(cfg.API, lg.Named("api"), mgrs, handler, ready); err != nil {
 		return
@@ -229,10 +210,6 @@ func (s *Server) preClose() {
 	if s.apiServer != nil {
 		s.apiServer.PreClose()
 	}
-	// Resign the metric reader owner to make other members campaign ASAP.
-	if s.metricsReader != nil && !reflect.ValueOf(s.metricsReader).IsNil() {
-		s.metricsReader.PreClose()
-	}
 	// Gracefully drain clients.
 	if s.proxy != nil {
 		s.proxy.PreClose()
@@ -240,7 +217,6 @@ func (s *Server) preClose() {
 }
 
 func (s *Server) Close() error {
-	metrics.ServerEventCounter.WithLabelValues(metrics.EventClose).Inc()
 	s.preClose()
 
 	errs := make([]error, 0, 4)
@@ -256,17 +232,11 @@ func (s *Server) Close() error {
 	if s.namespaceManager != nil {
 		errs = append(errs, s.namespaceManager.Close())
 	}
-	if s.metricsReader != nil && !reflect.ValueOf(s.metricsReader).IsNil() {
-		s.metricsReader.Close()
-	}
 	if s.infoSyncer != nil {
 		errs = append(errs, s.infoSyncer.Close())
 	}
 	if s.configManager != nil {
 		errs = append(errs, s.configManager.Close())
-	}
-	if s.metricsManager != nil {
-		s.metricsManager.Close()
 	}
 	if s.loggerManager != nil {
 		errs = append(errs, s.loggerManager.Close())

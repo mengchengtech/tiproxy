@@ -10,7 +10,6 @@ import (
 
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"github.com/mengchengtech/cerberus/pkg/util/etcd"
 	"github.com/siddontang/go/hack"
 	"go.etcd.io/etcd/api/v3/mvccpb"
@@ -191,15 +190,12 @@ func (m *election) onElected() {
 	m.lg.Info("elected as the owner")
 	m.member.OnElected()
 	m.isOwner = true
-	metrics.OwnerGauge.WithLabelValues(m.trimedKey).Set(1)
 }
 
 func (m *election) onRetired() {
 	m.lg.Info("the owner retires")
 	m.member.OnRetired()
 	m.isOwner = false
-	// Delete the metric so that it doesn't show on Grafana.
-	metrics.OwnerGauge.MetricVec.DeletePartialMatch(map[string]string{metrics.LblType: m.trimedKey})
 }
 
 // waitRetire retires after another member becomes the owner so that there will always be an owner.

@@ -44,11 +44,10 @@ type HTTPHandler interface {
 }
 
 type Managers struct {
-	CfgMgr        *mgrcfg.ConfigManager
-	NsMgr         mgrns.NamespaceManager
-	CertMgr       *mgrcrt.CertManager
-	BackendReader BackendReader
-	ReplayJobMgr  mgrrp.JobManager
+	CfgMgr       *mgrcfg.ConfigManager
+	NsMgr        mgrns.NamespaceManager
+	CertMgr      *mgrcrt.CertManager
+	ReplayJobMgr mgrrp.JobManager
 }
 
 type Server struct {
@@ -109,7 +108,6 @@ func NewServer(cfg config.API, lg *zap.Logger, mgr Managers, handler HTTPHandler
 	h.registerGrpc(mgr.CfgMgr)
 	h.registerAPI(engine.Group("/api"))
 	// The paths are consistent with other components.
-	h.registerMetrics(engine.Group("metrics"))
 	h.registerDebug(engine.Group("debug"))
 
 	if handler != nil {
@@ -196,9 +194,7 @@ func (h *Server) registerAPI(g *gin.RouterGroup) {
 		h.registerConfig(adminGroup.Group("config"))
 	}
 
-	h.registerMetrics(g.Group("metrics"))
 	h.registerDebug(g.Group("debug"))
-	h.registerBackend(g.Group("backend"))
 	h.registerTraffic(g.Group("traffic"))
 }
 

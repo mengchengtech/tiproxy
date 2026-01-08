@@ -17,7 +17,6 @@ import (
 	"github.com/mengchengtech/cerberus/lib/util/logger"
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -198,15 +197,10 @@ func (ts *backendMgrTester) forwardCmd4Proxy(clientIO, backendIO pnet.PacketIO) 
 	clientIO.ResetSequence()
 	request, err := clientIO.ReadPacket()
 	require.NoError(ts.t, err)
-	prevCounter, err := readCmdCounter(pnet.Command(request[0]), ts.tc.backendListener.Addr().String())
-	require.NoError(ts.t, err)
 	rsErr := ts.mp.ExecuteCmd(context.Background(), request)
 	if pnet.IsMySQLError(rsErr) {
 		rsErr = nil
 	}
-	curCounter, err := readCmdCounter(pnet.Command(request[0]), ts.tc.backendListener.Addr().String())
-	require.NoError(ts.t, err)
-	require.Equal(ts.t, prevCounter+1, curCounter)
 	return rsErr
 }
 
@@ -1276,95 +1270,6 @@ func TestCloseWhileGracefulClose(t *testing.T) {
 		},
 	}
 
-	ts.runTests(runners)
-}
-
-func TestTrafficMetrics(t *testing.T) {
-	ts := newBackendMgrTester(t)
-	var inBytes, inPackets, outBytes, outPackets int
-	runners := []runner{
-		// 1st handshake
-		{
-			client:  ts.mc.authenticate,
-			proxy:   ts.firstHandshake4Proxy,
-			backend: ts.handshake4Backend,
-		},
-		// receive at least 1000 packets
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.sql = "select * from t"
-				return ts.mc.request(packetIO)
-			},
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				addr := ts.tc.backendListener.Addr().String()
-				var err error
-				inBytes, inPackets, outBytes, outPackets, err = readTraffic(addr)
-				require.NoError(t, err)
-				require.True(t, inBytes > 0 && inPackets > 0 && outBytes > 0 && outPackets > 0)
-				crossLocationBytes, err := metrics.ReadCounter(metrics.CrossLocationBytesCounter)
-				require.NoError(t, err)
-				require.NoError(t, ts.forwardCmd4Proxy(clientIO, backendIO))
-				inBytes2, inPackets2, outBytes2, outPackets2, err := readTraffic(addr)
-				require.NoError(t, err)
-				require.True(t, inBytes2 > inBytes && inPackets2 > inPackets && outBytes2 > outBytes && outPackets2 > outPackets)
-				require.True(t, inBytes2 > 4096 && inPackets2 > 1000)
-				inBytes, inPackets, outBytes, outPackets = inBytes2, inPackets2, outBytes2, outPackets2
-				// The first backend is local, so no cross-az traffic.
-				crossLocationBytes2, err := metrics.ReadCounter(metrics.CrossLocationBytesCounter)
-				require.NoError(t, err)
-				require.True(t, crossLocationBytes2 == crossLocationBytes)
-				return nil
-			},
-			backend: func(packetIO pnet.PacketIO) error {
-				ts.mb.respondType = responseTypeResultSet
-				ts.mb.columns = 1
-				ts.mb.rows = 1000
-				return ts.mb.respond(packetIO)
-			},
-		},
-		// 2nd handshake: redirect
-		{
-			client: nil,
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				backendInst := newMockBackendInst(ts)
-				backendInst.setLocal(false)
-				ts.mp.Redirect(backendInst)
-				ts.mp.getEventReceiver().(*mockEventReceiver).checkEvent(ts.t, eventSucceed)
-				return nil
-			},
-			backend: ts.redirectSucceed4Backend,
-		},
-		// the traffic should still increase after redirection
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.sql = "select 1"
-				return ts.mc.request(packetIO)
-			},
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				addr := ts.tc.backendListener.Addr().String()
-				inBytes1, inPackets1, outBytes1, outPackets1, err := readTraffic(addr)
-				require.NoError(t, err)
-				require.True(t, inBytes1 > inBytes && inPackets1 > inPackets && outBytes1 > outBytes && outPackets1 > outPackets)
-				crossLocationBytes, err := metrics.ReadCounter(metrics.CrossLocationBytesCounter)
-				require.NoError(t, err)
-				require.NoError(t, ts.forwardCmd4Proxy(clientIO, backendIO))
-				inBytes2, inPackets2, outBytes2, outPackets2, err := readTraffic(addr)
-				require.NoError(t, err)
-				require.True(t, inBytes2 > inBytes1 && inPackets2 > inPackets1 && outBytes2 > outBytes1 && outPackets2 > outPackets1)
-				// The second backend is remote, so exists cross-az traffic.
-				crossLocationBytes2, err := metrics.ReadCounter(metrics.CrossLocationBytesCounter)
-				require.NoError(t, err)
-				require.True(t, crossLocationBytes2 > crossLocationBytes)
-				return nil
-			},
-			backend: func(packetIO pnet.PacketIO) error {
-				ts.mb.respondType = responseTypeResultSet
-				ts.mb.columns = 1
-				ts.mb.rows = 1
-				return ts.mb.respond(packetIO)
-			},
-		},
-	}
 	ts.runTests(runners)
 }
 

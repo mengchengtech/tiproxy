@@ -18,7 +18,6 @@ import (
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"github.com/mengchengtech/cerberus/pkg/balance/policy"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
 )
@@ -67,7 +66,6 @@ func (tester *routerTester) addBackends(num int) {
 		tester.backends[addr] = &observer.BackendHealth{
 			Healthy: true,
 		}
-		metrics.BackendConnGauge.WithLabelValues(addr).Set(0)
 	}
 	tester.notifyHealth()
 }
@@ -186,21 +184,15 @@ func (tester *routerTester) redirectFinish(num int, succeed bool) {
 		}
 
 		from, to := conn.from, conn.to
-		prevCount, err := readMigrateCounter(from.Addr(), to.Addr(), succeed)
-		require.NoError(tester.t, err)
 		if succeed {
-			err = tester.router.OnRedirectSucceed(from.Addr(), to.Addr(), conn)
+			err := tester.router.OnRedirectSucceed(from.Addr(), to.Addr(), conn)
 			require.NoError(tester.t, err)
 			conn.redirectSucceed()
 		} else {
-			err = tester.router.OnRedirectFail(from.Addr(), to.Addr(), conn)
+			err := tester.router.OnRedirectFail(from.Addr(), to.Addr(), conn)
 			require.NoError(tester.t, err)
 			conn.redirectFail()
 		}
-		curCount, err := readMigrateCounter(from.Addr(), to.Addr(), succeed)
-		require.NoError(tester.t, err)
-		require.Equal(tester.t, prevCount+1, curCount)
-
 		i++
 		if i >= num {
 			break
@@ -239,14 +231,6 @@ func (tester *routerTester) checkBackendNum(num int) {
 	require.Equal(tester.t, num, len(tester.router.backends))
 }
 
-func (tester *routerTester) checkBackendConnMetrics() {
-	for addr, backend := range tester.router.backends {
-		val, err := readBackendConnMetrics(addr)
-		require.NoError(tester.t, err)
-		require.Equal(tester.t, backend.ConnCount(), val)
-	}
-}
-
 func (tester *routerTester) clear() {
 	tester.backendID = 0
 	tester.connID = 0
@@ -260,10 +244,8 @@ func TestRebalance(t *testing.T) {
 	tester.addBackends(3)
 	tester.killBackends(2)
 	tester.addConnections(100)
-	tester.checkBackendConnMetrics()
 	// 90 not redirecting
 	tester.closeConnections(10, false)
-	tester.checkBackendConnMetrics()
 	// make sure rebalance will work
 	tester.addBackends(3)
 	// 40 not redirecting, 50 redirecting
@@ -312,7 +294,6 @@ func TestConnBalanced(t *testing.T) {
 		tester.rebalance(100)
 		tester.redirectFinish(100, true)
 		tester.checkBalanced()
-		tester.checkBackendConnMetrics()
 	}
 }
 

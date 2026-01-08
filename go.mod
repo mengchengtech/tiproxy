@@ -19,9 +19,6 @@ require (
 	github.com/pingcap/sysutil v1.0.0
 	github.com/pingcap/tidb v1.1.0-beta.0.20230103132820-3ccff46aa3bc
 	github.com/pingcap/tidb/parser v0.0.0-20230103132820-3ccff46aa3bc
-	github.com/prometheus/client_golang v1.14.0
-	github.com/prometheus/client_model v0.3.0
-	github.com/prometheus/common v0.39.0
 	github.com/siddontang/go v0.0.0-20180604090527-bdc77568d726
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.4
@@ -79,6 +76,9 @@ require (
 	github.com/pingcap/log v1.1.1-0.20221116035753-734d527bc87c // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20221212215047-62379fc7944b // indirect
+	github.com/prometheus/client_golang v1.14.0 // indirect
+	github.com/prometheus/client_model v0.3.0 // indirect
+	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rogpeppe/go-internal v1.8.1 // indirect

@@ -16,8 +16,7 @@ import (
 )
 
 const (
-	maxBitNum            = 64
-	updateMetricInterval = 10 * time.Second
+	maxBitNum = 64
 )
 
 var _ policy.BalancePolicy = (*FactorBasedBalance)(nil)
@@ -32,7 +31,6 @@ type FactorBasedBalance struct {
 	factorStatus    *FactorStatus
 	factorConnCount *FactorConnCount
 	totalBitNum     int
-	lastMetricTime  time.Time
 }
 
 func NewFactorBasedBalance(lg *zap.Logger) *FactorBasedBalance {
@@ -90,10 +88,6 @@ func (fbb *FactorBasedBalance) updateScore(backends []policy.BackendCtx) []score
 	scoredBackends := fbb.cachedList[:0]
 	for _, backend := range backends {
 		scoredBackends = append(scoredBackends, newScoredBackend(backend, fbb.lg))
-	}
-	now := time.Now()
-	if now.Sub(fbb.lastMetricTime) > updateMetricInterval {
-		fbb.lastMetricTime = now
 	}
 	for _, factor := range fbb.factors {
 		bitNum := factor.ScoreBitNum()

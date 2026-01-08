@@ -258,11 +258,6 @@ func (ts *observerTestSuite) checkStatus(addr string, expectedHealthy bool, info
 			return !ok || !health.Healthy
 		}
 	}, 3*time.Second, 10*time.Millisecond)
-	require.True(ts.t, checkBackendStatusMetrics(addr, expectedHealthy))
-	cycle, err := readHealthCheckCycle()
-	require.NoError(ts.t, err)
-	require.Greater(ts.t, cycle.Nanoseconds(), int64(0))
-	require.Less(ts.t, cycle.Nanoseconds(), 3*time.Second)
 }
 
 func (ts *observerTestSuite) getResultFromCh() HealthResult {

@@ -15,7 +15,6 @@ import (
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/manager/cert"
 	"github.com/mengchengtech/cerberus/pkg/manager/id"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/proxy/client"
 	"github.com/mengchengtech/cerberus/pkg/proxy/keepalive"
@@ -171,9 +170,6 @@ func (s *SQLServer) onConn(ctx context.Context, conn net.Conn, addr string) {
 		return
 	}
 
-	metrics.ConnGauge.Inc()
-	metrics.CreateConnCounter.Inc()
-
 	defer func() {
 		s.mu.Lock()
 		delete(s.mu.clients, connID)
@@ -184,7 +180,6 @@ func (s *SQLServer) onConn(ctx context.Context, conn net.Conn, addr string) {
 		} else {
 			logger.Debug("connection closed")
 		}
-		metrics.ConnGauge.Dec()
 	}()
 
 	if err := keepalive.SetKeepalive(conn, config.KeepAlive{Enabled: tcpKeepAlive}); err != nil {

@@ -20,7 +20,6 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
 	"github.com/mengchengtech/cerberus/pkg/manager/cert"
 	"github.com/mengchengtech/cerberus/pkg/manager/id"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/proxy/client"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
@@ -45,28 +44,11 @@ func TestCreateConn(t *testing.T) {
 		require.NoError(t, err)
 		return conn
 	}
-	checkMetrics := func(totalConns, createConns int) {
-		require.Eventually(t, func() bool {
-			connGauge, err := metrics.ReadGauge(metrics.ConnGauge)
-			require.NoError(t, err)
-			if totalConns != int(connGauge) {
-				return false
-			}
-			connCounter, err := metrics.ReadCounter(metrics.CreateConnCounter)
-			require.NoError(t, err)
-			return createConns == connCounter
-		}, time.Second, 10*time.Millisecond)
-	}
 
-	checkMetrics(0, 0)
 	conn1 := createConn()
-	checkMetrics(1, 1)
 	conn2 := createConn()
-	checkMetrics(2, 2)
 	require.NoError(t, conn1.Close())
-	checkMetrics(1, 2)
 	require.NoError(t, conn2.Close())
-	checkMetrics(0, 2)
 }
 
 func TestGracefulCloseConn(t *testing.T) {

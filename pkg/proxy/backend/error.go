@@ -131,7 +131,7 @@ func Error2Source(err error) ErrorSource {
 	}
 }
 
-// String is used for metrics labels and log.
+// String is used for log.
 func (es ErrorSource) String() string {
 	switch es {
 	case SrcNone:

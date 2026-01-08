@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mengchengtech/cerberus/lib/util/logger"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"github.com/stretchr/testify/require"
 )
 
@@ -124,41 +122,4 @@ func TestOwnerHang(t *testing.T) {
 	time.Sleep(time.Second)
 	ownerID = ts.getOwnerID()
 	require.Equal(t, "1", ownerID)
-}
-
-func TestOwnerMetric(t *testing.T) {
-	lg, _ := logger.CreateLoggerForTest(t)
-	checkMetric := func(key string, expectedFound bool) {
-		results, err := metrics.Collect(metrics.OwnerGauge)
-		require.NoError(t, err)
-		found := false
-		for _, result := range results {
-			if *result.Label[0].Value == key {
-				require.EqualValues(t, 1, *result.Gauge.Value)
-				found = true
-				break
-			}
-		}
-		require.Equal(t, expectedFound, found)
-	}
-
-	elec1 := NewElection(lg, nil, electionConfigForTest(1), "1", ownerKeyPrefix+"key"+ownerKeySuffix, newMockMember())
-	elec1.onElected()
-	checkMetric("key", true)
-
-	elec2 := NewElection(lg, nil, electionConfigForTest(1), "1", "key2/1", newMockMember())
-	elec2.onElected()
-	checkMetric("key2/1", true)
-
-	elec3 := NewElection(lg, nil, electionConfigForTest(1), "1", ownerKeyPrefix+"key3/1", newMockMember())
-	elec3.onElected()
-	checkMetric("key3/1", true)
-
-	elec1.onRetired()
-	checkMetric("key", false)
-	checkMetric("key2/1", true)
-	checkMetric("key3/1", true)
-
-	elec3.Close()
-	checkMetric("key3/1", false)
 }

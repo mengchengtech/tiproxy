@@ -36,11 +36,10 @@ func createServer(t *testing.T) (*Server, func(t *testing.T, method string, path
 	srv, err := NewServer(config.API{
 		Addr: "0.0.0.0:0",
 	}, lg, Managers{
-		CfgMgr:        cfgmgr,
-		NsMgr:         nsMgr,
-		CertMgr:       crtmgr,
-		BackendReader: &mockBackendReader{},
-		ReplayJobMgr:  &mockReplayJobManager{},
+		CfgMgr:       cfgmgr,
+		NsMgr:        nsMgr,
+		CertMgr:      crtmgr,
+		ReplayJobMgr: &mockReplayJobManager{},
 	}, nil, ready)
 	require.NoError(t, err)
 	t.Cleanup(func() {

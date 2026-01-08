@@ -9,7 +9,6 @@ import (
 	"net"
 
 	"github.com/mengchengtech/cerberus/lib/util/errors"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/mengchengtech/cerberus/pkg/sqlreplay/capture"
@@ -64,7 +63,6 @@ clean:
 		fields = append(fields, zap.Stringer("quit_source", src), zap.Error(err))
 		cc.logger.Warn(msg, fields...)
 	}
-	metrics.DisConnCounter.WithLabelValues(src.String()).Inc()
 }
 
 func (cc *ClientConnection) processMsg(ctx context.Context) error {
