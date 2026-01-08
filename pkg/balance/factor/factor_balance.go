@@ -11,9 +11,7 @@ import (
 
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
-	"github.com/mengchengtech/cerberus/pkg/balance/metricsreader"
 	"github.com/mengchengtech/cerberus/pkg/balance/policy"
-	"github.com/mengchengtech/cerberus/pkg/metrics"
 	"go.uber.org/zap"
 )
 
@@ -30,23 +28,16 @@ type FactorBasedBalance struct {
 	factors []Factor
 	// to reduce memory allocation
 	cachedList      []scoredBackend
-	mr              metricsreader.MetricsReader
 	lg              *zap.Logger
 	factorStatus    *FactorStatus
-	factorLabel     *FactorLabel
-	factorHealth    *FactorHealth
-	factorMemory    *FactorMemory
-	factorCPU       *FactorCPU
-	factorLocation  *FactorLocation
 	factorConnCount *FactorConnCount
 	totalBitNum     int
 	lastMetricTime  time.Time
 }
 
-func NewFactorBasedBalance(lg *zap.Logger, mr metricsreader.MetricsReader) *FactorBasedBalance {
+func NewFactorBasedBalance(lg *zap.Logger) *FactorBasedBalance {
 	return &FactorBasedBalance{
 		lg:         lg,
-		mr:         mr,
 		cachedList: make([]scoredBackend, 0, 512),
 	}
 }
@@ -63,60 +54,10 @@ func (fbb *FactorBasedBalance) Init(cfg *config.Config) {
 func (fbb *FactorBasedBalance) setFactors(cfg *config.Config) {
 	fbb.factors = fbb.factors[:0]
 
-	if cfg.Balance.LabelName != "" {
-		if fbb.factorLabel == nil {
-			fbb.factorLabel = NewFactorLabel()
-		}
-		fbb.factors = append(fbb.factors, fbb.factorLabel)
-	} else if fbb.factorLabel != nil {
-		fbb.factorLabel.Close()
-		fbb.factorLabel = nil
-	}
-
 	if fbb.factorStatus == nil {
 		fbb.factorStatus = NewFactorStatus(fbb.lg.Named("status"))
 	}
 	fbb.factors = append(fbb.factors, fbb.factorStatus)
-
-	switch cfg.Balance.Policy {
-	case config.BalancePolicyResource, config.BalancePolicyLocation:
-		if fbb.factorLocation == nil {
-			fbb.factorLocation = NewFactorLocation()
-		}
-		if fbb.factorHealth == nil {
-			fbb.factorHealth = NewFactorHealth(fbb.mr, fbb.lg.Named("health"))
-		}
-		if fbb.factorMemory == nil {
-			fbb.factorMemory = NewFactorMemory(fbb.mr, fbb.lg.Named("memory"))
-		}
-		if fbb.factorCPU == nil {
-			fbb.factorCPU = NewFactorCPU(fbb.mr, fbb.lg.Named("cpu"))
-		}
-	default:
-		if fbb.factorLocation != nil {
-			fbb.factorLocation.Close()
-			fbb.factorLocation = nil
-		}
-		if fbb.factorHealth != nil {
-			fbb.factorHealth.Close()
-			fbb.factorHealth = nil
-		}
-		if fbb.factorMemory != nil {
-			fbb.factorMemory.Close()
-			fbb.factorMemory = nil
-		}
-		if fbb.factorCPU != nil {
-			fbb.factorCPU.Close()
-			fbb.factorCPU = nil
-		}
-	}
-
-	switch cfg.Balance.Policy {
-	case config.BalancePolicyResource:
-		fbb.factors = append(fbb.factors, fbb.factorHealth, fbb.factorMemory, fbb.factorCPU, fbb.factorLocation)
-	case config.BalancePolicyLocation:
-		fbb.factors = append(fbb.factors, fbb.factorLocation, fbb.factorHealth, fbb.factorMemory, fbb.factorCPU)
-	}
 
 	if fbb.factorConnCount == nil {
 		fbb.factorConnCount = NewFactorConnCount()
@@ -127,7 +68,6 @@ func (fbb *FactorBasedBalance) setFactors(cfg *config.Config) {
 	if err != nil {
 		panic(err.Error())
 	}
-	metrics.BackendScoreGauge.Reset()
 	for _, factor := range fbb.factors {
 		factor.SetConfig(cfg)
 	}
@@ -151,10 +91,8 @@ func (fbb *FactorBasedBalance) updateScore(backends []policy.BackendCtx) []score
 	for _, backend := range backends {
 		scoredBackends = append(scoredBackends, newScoredBackend(backend, fbb.lg))
 	}
-	needUpdateMetric := false
 	now := time.Now()
 	if now.Sub(fbb.lastMetricTime) > updateMetricInterval {
-		needUpdateMetric = true
 		fbb.lastMetricTime = now
 	}
 	for _, factor := range fbb.factors {
@@ -163,11 +101,6 @@ func (fbb *FactorBasedBalance) updateScore(backends []policy.BackendCtx) []score
 			scoredBackends[j].prepareScore(bitNum)
 		}
 		factor.UpdateScore(scoredBackends)
-		if needUpdateMetric {
-			for j := 0; j < len(scoredBackends); j++ {
-				metrics.BackendScoreGauge.WithLabelValues(backends[j].Addr(), factor.Name()).Set(float64(scoredBackends[j].factorScore(bitNum)))
-			}
-		}
 	}
 	sort.Slice(scoredBackends, func(i int, j int) bool {
 		return scoredBackends[i].scoreBits < scoredBackends[j].scoreBits

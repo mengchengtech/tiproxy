@@ -20,7 +20,7 @@ import (
 
 func TestRouteWithOneFactor(t *testing.T) {
 	lg, _ := logger.CreateLoggerForTest(t)
-	fm := NewFactorBasedBalance(lg, newMockMetricsReader())
+	fm := NewFactorBasedBalance(lg)
 	factor := &mockFactor{bitNum: 8, balanceCount: 1, threshold: 1, canBeRouted: true}
 	fm.factors = []Factor{factor}
 	require.NoError(t, fm.updateBitNum())
@@ -74,7 +74,7 @@ func TestRouteWithOneFactor(t *testing.T) {
 
 func TestRouteWith2Factors(t *testing.T) {
 	lg, _ := logger.CreateLoggerForTest(t)
-	fm := NewFactorBasedBalance(lg, newMockMetricsReader())
+	fm := NewFactorBasedBalance(lg)
 	factor1 := &mockFactor{bitNum: 4, balanceCount: 1, threshold: 1, canBeRouted: true}
 	factor2 := &mockFactor{bitNum: 12, balanceCount: 1, threshold: 1, canBeRouted: true}
 	fm.factors = []Factor{factor1, factor2}
@@ -146,7 +146,7 @@ func TestRouteWith2Factors(t *testing.T) {
 
 func TestBalanceWithOneFactor(t *testing.T) {
 	lg, _ := logger.CreateLoggerForTest(t)
-	fm := NewFactorBasedBalance(lg, newMockMetricsReader())
+	fm := NewFactorBasedBalance(lg)
 	factor := &mockFactor{bitNum: 2, balanceCount: 1, canBeRouted: true}
 	fm.factors = []Factor{factor}
 	require.NoError(t, fm.updateBitNum())
@@ -196,7 +196,7 @@ func TestBalanceWithOneFactor(t *testing.T) {
 
 func TestBalanceWith2Factors(t *testing.T) {
 	lg, _ := logger.CreateLoggerForTest(t)
-	fm := NewFactorBasedBalance(lg, newMockMetricsReader())
+	fm := NewFactorBasedBalance(lg)
 	factor1 := &mockFactor{bitNum: 2, balanceCount: 2, threshold: 1, canBeRouted: true}
 	factor2 := &mockFactor{bitNum: 12, balanceCount: 1, canBeRouted: true}
 	fm.factors = []Factor{factor1, factor2}
@@ -283,7 +283,7 @@ func TestBalanceWith2Factors(t *testing.T) {
 
 func TestBalanceWith3Factors(t *testing.T) {
 	lg, _ := logger.CreateLoggerForTest(t)
-	fm := NewFactorBasedBalance(lg, newMockMetricsReader())
+	fm := NewFactorBasedBalance(lg)
 	factors := []*mockFactor{{bitNum: 1, canBeRouted: true}, {bitNum: 2, canBeRouted: true}, {bitNum: 2, canBeRouted: true}}
 	fm.factors = []Factor{factors[0], factors[1], factors[2]}
 	require.NoError(t, fm.updateBitNum())
@@ -336,7 +336,7 @@ func TestBalanceWith3Factors(t *testing.T) {
 // by locating the unbalanced bits.
 func TestScoreAlwaysUpdated(t *testing.T) {
 	lg, _ := logger.CreateLoggerForTest(t)
-	fm := NewFactorBasedBalance(lg, newMockMetricsReader())
+	fm := NewFactorBasedBalance(lg)
 	factors := []*mockFactor{{bitNum: 1, canBeRouted: true}, {bitNum: 2, canBeRouted: true}}
 	fm.factors = []Factor{factors[0], factors[1]}
 	factors[0].updateScore = func(backends []scoredBackend) {
@@ -360,70 +360,8 @@ func createBackends(num int) []policy.BackendCtx {
 	return backends
 }
 
-func TestSetFactors(t *testing.T) {
-	tests := []struct {
-		setFunc       func(balance *config.Balance)
-		expectedNames []string
-	}{
-		{
-			setFunc:       func(balance *config.Balance) {},
-			expectedNames: []string{"status", "health", "memory", "cpu", "location", "conn"},
-		},
-		{
-			setFunc: func(balance *config.Balance) {
-				balance.Policy = config.BalancePolicyLocation
-			},
-			expectedNames: []string{"status", "location", "health", "memory", "cpu", "conn"},
-		},
-		{
-			setFunc: func(balance *config.Balance) {
-				balance.LabelName = "group"
-			},
-			expectedNames: []string{"label", "status", "health", "memory", "cpu", "location", "conn"},
-		},
-		{
-			setFunc: func(balance *config.Balance) {
-				balance.Policy = config.BalancePolicyLocation
-				balance.LabelName = "group"
-			},
-			expectedNames: []string{"label", "status", "location", "health", "memory", "cpu", "conn"},
-		},
-		{
-			setFunc: func(balance *config.Balance) {
-				balance.Policy = config.BalancePolicyConnection
-			},
-			expectedNames: []string{"status", "conn"},
-		},
-		{
-			setFunc: func(balance *config.Balance) {
-				balance.Policy = config.BalancePolicyConnection
-				balance.LabelName = "group"
-			},
-			expectedNames: []string{"label", "status", "conn"},
-		},
-	}
-
-	lg, _ := logger.CreateLoggerForTest(t)
-	fm := NewFactorBasedBalance(lg, newMockMetricsReader())
-	for i, test := range tests {
-		cfg := &config.Config{
-			Balance: config.Balance{
-				Policy: config.BalancePolicyResource,
-			},
-		}
-		fm.Init(cfg)
-		test.setFunc(&cfg.Balance)
-		fm.SetConfig(cfg)
-		require.Len(t, fm.factors, len(test.expectedNames), "test index %d", i)
-		for j := 0; j < len(fm.factors); j++ {
-			require.Equal(t, test.expectedNames[j], fm.factors[j].Name(), "test index %d", i)
-		}
-	}
-	fm.Close()
-}
-
 func TestCanBeRouted(t *testing.T) {
-	fm := NewFactorBasedBalance(zap.NewNop(), newMockMetricsReader())
+	fm := NewFactorBasedBalance(zap.NewNop())
 	factor1 := &mockFactor{bitNum: 2, balanceCount: 1, canBeRouted: false}
 	factor2 := &mockFactor{bitNum: 2, balanceCount: 1, canBeRouted: true}
 	fm.factors = []Factor{factor1, factor2}
@@ -476,7 +414,7 @@ func TestCanBeRouted(t *testing.T) {
 }
 
 func TestCanBalance(t *testing.T) {
-	fm := NewFactorBasedBalance(zap.NewNop(), newMockMetricsReader())
+	fm := NewFactorBasedBalance(zap.NewNop())
 	factor1 := &mockFactor{bitNum: 2, balanceCount: 1, canBeRouted: true, advice: AdviceNegtive}
 	factor2 := &mockFactor{bitNum: 2, balanceCount: 1, canBeRouted: true}
 	fm.factors = []Factor{factor1, factor2}
@@ -521,7 +459,7 @@ func TestCanBalance(t *testing.T) {
 }
 
 func TestSetFactorConcurrently(t *testing.T) {
-	fbb := NewFactorBasedBalance(zap.NewNop(), newMockMetricsReader())
+	fbb := NewFactorBasedBalance(zap.NewNop())
 	var wg waitgroup.WaitGroup
 	cfg := &config.Config{}
 	fbb.Init(cfg)
@@ -529,11 +467,7 @@ func TestSetFactorConcurrently(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	wg.Run(func() {
 		defer wg.Done()
-		policies := []string{config.BalancePolicyConnection, config.BalancePolicyResource, config.BalancePolicyLocation}
 		for i := 0; ctx.Err() != nil; i++ {
-			cfg.Balance = config.Balance{
-				Policy: policies[i%len(policies)],
-			}
 			fbb.SetConfig(cfg)
 		}
 	})

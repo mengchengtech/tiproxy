@@ -4,16 +4,11 @@
 package factor
 
 import (
-	"context"
-	"sort"
 	"strconv"
-	"time"
 
 	"github.com/mengchengtech/cerberus/lib/config"
-	"github.com/mengchengtech/cerberus/pkg/balance/metricsreader"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"github.com/mengchengtech/cerberus/pkg/balance/policy"
-	"github.com/prometheus/common/model"
 	"go.uber.org/zap"
 )
 
@@ -116,42 +111,6 @@ func (mf *mockFactor) CanBeRouted(score uint64) bool {
 func (mf *mockFactor) Close() {
 }
 
-var _ metricsreader.MetricsReader = (*mockMetricsReader)(nil)
-
-type mockMetricsReader struct {
-	qrs map[string]metricsreader.QueryResult
-}
-
-func newMockMetricsReader() *mockMetricsReader {
-	return &mockMetricsReader{
-		qrs: make(map[string]metricsreader.QueryResult),
-	}
-}
-
-func (mmr *mockMetricsReader) Start(ctx context.Context) error {
-	return nil
-}
-
-func (mmr *mockMetricsReader) AddQueryExpr(key string, queryExpr metricsreader.QueryExpr, queryRule metricsreader.QueryRule) {
-}
-
-func (mmr *mockMetricsReader) RemoveQueryExpr(key string) {
-}
-
-func (mmr *mockMetricsReader) GetQueryResult(key string) metricsreader.QueryResult {
-	return mmr.qrs[key]
-}
-
-func (mmr *mockMetricsReader) GetBackendMetrics() []byte {
-	return nil
-}
-
-func (mmr *mockMetricsReader) PreClose() {
-}
-
-func (mmr *mockMetricsReader) Close() {
-}
-
 func createBackend(backendIdx, connCount, connScore int) scoredBackend {
 	host := strconv.Itoa(backendIdx)
 	return scoredBackend{
@@ -166,40 +125,4 @@ func createBackend(backendIdx, connCount, connScore int) scoredBackend {
 			healthy:   true,
 		},
 	}
-}
-
-func createSampleStream(values []float64, backendIdx int, curTime model.Time) *model.SampleStream {
-	host := strconv.Itoa(backendIdx)
-	labelSet := model.Metric{metricsreader.LabelNameInstance: model.LabelValue(host + ":10080")}
-	pairs := make([]model.SamplePair, 0, len(values))
-	for i, cpu := range values {
-		ts := curTime.Add(15 * time.Second * time.Duration(i-len(values)))
-		pairs = append(pairs, model.SamplePair{Timestamp: ts, Value: model.SampleValue(cpu)})
-	}
-	return &model.SampleStream{Metric: labelSet, Values: pairs}
-}
-
-func createPairs(values []float64, ts []model.Time) []model.SamplePair {
-	pairs := make([]model.SamplePair, 0, len(values))
-	for i, value := range values {
-		pairs = append(pairs, model.SamplePair{Timestamp: ts[i], Value: model.SampleValue(value)})
-	}
-	return pairs
-}
-
-func createSample(value float64, backendIdx int) *model.Sample {
-	host := strconv.Itoa(backendIdx)
-	labelSet := model.Metric{metricsreader.LabelNameInstance: model.LabelValue(host + ":10080")}
-	ts := model.Time(time.Now().UnixMilli())
-	return &model.Sample{Metric: labelSet, Timestamp: ts, Value: model.SampleValue(value)}
-}
-
-func updateScore(fc Factor, backends []scoredBackend) {
-	for i := 0; i < len(backends); i++ {
-		backends[i].scoreBits = 0
-	}
-	fc.UpdateScore(backends)
-	sort.Slice(backends, func(i, j int) bool {
-		return backends[i].score() < backends[j].score()
-	})
 }
