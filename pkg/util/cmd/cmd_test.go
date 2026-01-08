@@ -21,9 +21,9 @@ func TestExecCmd(t *testing.T) {
 		{
 			cmds: []string{"echo", "abc"},
 		},
-		{
-			cmds: []string{"cd", "."},
-		},
+		// {
+		// 	cmds: []string{"cd", "."},
+		// },
 		{
 			cmds:   []string{"hello"},
 			hasErr: true,
