@@ -14,11 +14,9 @@ import (
 	mgrrouter "github.com/mengchengtech/cerberus/pkg/manager/router"
 	"github.com/mengchengtech/cerberus/pkg/proxy"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
-	"github.com/mengchengtech/cerberus/pkg/sctx"
 	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
 	"github.com/mengchengtech/cerberus/pkg/util/waitgroup"
-	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -33,10 +31,10 @@ type Server struct {
 	proxy *proxy.SQLServer
 }
 
-func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error) {
+func NewServer(ctx context.Context, configFile string) (srv *Server, err error) {
 	cfgManager := config.NewConfigManager()
 	// setup config manager
-	if err = cfgManager.Init(sctx.ConfigFile); err != nil {
+	if err = cfgManager.Init(configFile); err != nil {
 		return
 	}
 
@@ -45,9 +43,6 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 		routerManager: mgrrouter.NewRouterManager(),
 		certManager:   cert.NewCertManager(),
 	}
-
-	handler := sctx.Handler
-	ready := atomic.NewBool(false)
 
 	cfg := srv.configManager.GetConfig()
 
@@ -82,16 +77,10 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 		}
 	}
 
-	var hsHandler backend.HandshakeHandler
-	if handler != nil {
-		hsHandler = handler
-	} else {
-		hsHandler = backend.NewDefaultHandshakeHandler(srv.routerManager)
-	}
-
-	// setup proxy server
-	idMgr := id.NewIDManager()
 	{
+		hsHandler := backend.NewDefaultHandshakeHandler(srv.routerManager)
+		// setup proxy server
+		idMgr := id.NewIDManager()
 		srv.proxy, err = proxy.NewSQLServer(lg.Named("proxy"), cfg, srv.certManager, idMgr, hsHandler)
 		if err != nil {
 			return
@@ -99,7 +88,6 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 		srv.proxy.Run(ctx)
 	}
 
-	ready.Toggle()
 	return
 }
 

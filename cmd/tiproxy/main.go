@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/mengchengtech/cerberus/pkg/sctx"
 	"github.com/mengchengtech/cerberus/pkg/server"
 	"github.com/mengchengtech/cerberus/pkg/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
@@ -26,12 +25,11 @@ func main() {
 	rootCmd.SetOutput(os.Stdout)
 	rootCmd.SetErr(os.Stderr)
 
-	sctx := &sctx.Context{}
-
-	rootCmd.PersistentFlags().StringVar(&sctx.ConfigFile, "config", "", "proxy config file path")
+	var configFile string
+	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "proxy config file path")
 
 	rootCmd.RunE = func(cmd *cobra.Command, _ []string) error {
-		srv, err := server.NewServer(cmd.Context(), sctx)
+		srv, err := server.NewServer(cmd.Context(), configFile)
 		if err != nil {
 			return errors.Wrapf(err, "fail to create server")
 		}

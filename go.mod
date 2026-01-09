@@ -15,7 +15,6 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.4
 	github.com/tiancaiamao/gp v0.0.0-20230126082955-4f9e4f1ed9b5
-	go.uber.org/atomic v1.11.0
 	go.uber.org/zap v1.26.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
@@ -33,6 +32,7 @@ require (
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/siddontang/go-log v0.0.0-20180807004314-8d05993dda07 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20221023144134-a1e5550cf13e // indirect
 	golang.org/x/text v0.13.0 // indirect
