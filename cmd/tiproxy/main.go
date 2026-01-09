@@ -4,10 +4,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/mengchengtech/cerberus/lib/util/cmd"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
 	"github.com/mengchengtech/cerberus/pkg/server"
@@ -26,12 +28,7 @@ func main() {
 
 	sctx := &sctx.Context{}
 
-	var deprecatedStr, configInfo string
 	rootCmd.PersistentFlags().StringVar(&sctx.ConfigFile, "config", "", "proxy config file path")
-	rootCmd.PersistentFlags().StringVar(&deprecatedStr, "log_encoder", "", "deprecated and will be removed")
-	rootCmd.PersistentFlags().StringVar(&deprecatedStr, "log_level", "", "deprecated and will be removed")
-	rootCmd.PersistentFlags().StringVar(&sctx.AdvertiseAddr, "advertise-addr", "", "advertise address")
-	rootCmd.PersistentFlags().StringVar(&configInfo, "config-info", "", "output config info and exit")
 
 	rootCmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		srv, err := server.NewServer(cmd.Context(), sctx)
@@ -47,5 +44,26 @@ func main() {
 		return err
 	}
 
-	cmd.RunRootCommand(rootCmd)
+	RunRootCommand(rootCmd)
+}
+
+func RunRootCommand(rootCmd *cobra.Command) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		sc := make(chan os.Signal, 1)
+		signal.Notify(sc,
+			syscall.SIGINT,
+			syscall.SIGTERM,
+			syscall.SIGQUIT,
+		)
+
+		// wait for quit signals
+		<-sc
+		cancel()
+	}()
+
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
+		fmt.Printf("%+v\n", err)
+		os.Exit(1)
+	}
 }
