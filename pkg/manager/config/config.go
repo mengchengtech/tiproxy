@@ -5,13 +5,11 @@ package config
 
 import (
 	"bytes"
-	"hash/crc32"
 	"os"
 
 	"github.com/BurntSushi/toml"
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
-	"go.uber.org/zap"
 )
 
 func (e *ConfigManager) reloadConfigFile(file string) error {
@@ -33,10 +31,7 @@ func (e *ConfigManager) reloadConfigFile(file string) error {
 // So we always update the current config with a TOML string, which only overwrite fields
 // that are specified by users.
 func (e *ConfigManager) SetTOMLConfig(data []byte) (err error) {
-	e.sts.Lock()
-	defer e.sts.Unlock()
-
-	base := e.sts.current
+	base := e.current
 	if base == nil {
 		base = config.NewConfig()
 	} else {
@@ -56,44 +51,10 @@ func (e *ConfigManager) SetTOMLConfig(data []byte) (err error) {
 		return
 	}
 
-	e.sts.current = base
-	originalData := e.sts.data
-	var buf bytes.Buffer
-	if err = toml.NewEncoder(&buf).Encode(base); err != nil {
-		return errors.WithStack(err)
-	}
-	newData := buf.Bytes()
-
-	// TiDB-Operator may set the same labels by the HTTP API periodically, don't notify the listeners every time.
-	if originalData == nil || !bytes.Equal(originalData, newData) {
-		e.sts.checksum = crc32.ChecksumIEEE(newData)
-		e.sts.data = newData
-		e.logger.Info("current config", zap.Any("cfg", e.sts.current))
-		for _, list := range e.sts.listeners {
-			list <- base.Clone()
-		}
-	}
+	e.current = base
 	return
 }
 
 func (e *ConfigManager) GetConfig() *config.Config {
-	e.sts.Lock()
-	v := e.sts.current
-	e.sts.Unlock()
-	return v
-}
-
-func (e *ConfigManager) GetConfigChecksum() uint32 {
-	e.sts.Lock()
-	c := e.sts.checksum
-	e.sts.Unlock()
-	return c
-}
-
-func (e *ConfigManager) WatchConfig() <-chan *config.Config {
-	ch := make(chan *config.Config)
-	e.sts.Lock()
-	e.sts.listeners = append(e.sts.listeners, ch)
-	e.sts.Unlock()
-	return ch
+	return e.current
 }

@@ -4,7 +4,6 @@
 package cert
 
 import (
-	"context"
 	"crypto/tls"
 	"sync/atomic"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/lib/util/security"
-	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"go.uber.org/zap"
 )
 
@@ -29,8 +27,6 @@ type CertManager struct {
 	sqlTLS             *security.CertInfo // proxy -> tidb sql port
 	sqlTLSConfig       atomic.Pointer[tls.Config]
 
-	cancel        context.CancelFunc
-	wg            waitgroup.WaitGroup
 	retryInterval atomic.Int64
 	logger        *zap.Logger
 }
@@ -44,7 +40,7 @@ func NewCertManager() *CertManager {
 
 // Init creates a CertManager and reloads certificates periodically.
 // cfgch can be set to nil for the serverless tier because it has no config manager.
-func (cm *CertManager) Init(cfg *config.Config, logger *zap.Logger, cfgch <-chan *config.Config) error {
+func (cm *CertManager) Init(cfg *config.Config, logger *zap.Logger) error {
 	cm.logger = logger
 	cm.serverSQLTLS = security.NewCert(true)
 	cm.sqlTLS = security.NewCert(false)
@@ -53,9 +49,6 @@ func (cm *CertManager) Init(cfg *config.Config, logger *zap.Logger, cfgch <-chan
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	cm.reloadLoop(ctx, cfgch)
-	cm.cancel = cancel
 	return nil
 }
 
@@ -74,33 +67,6 @@ func (cm *CertManager) ServerSQLTLS() *tls.Config {
 
 func (cm *CertManager) SQLTLS() *tls.Config {
 	return cm.sqlTLSConfig.Load()
-}
-
-// The proxy is supposed to be always online, so it should reload certs automatically,
-// rather than reloading it by restarting the proxy.
-// The proxy periodically reloads certs. If it fails, we will retry in the next round.
-// If configuration changes, it only affects new connections by returning new *tls.Config.
-func (cm *CertManager) reloadLoop(ctx context.Context, cfgch <-chan *config.Config) {
-	// Failing to reload certs may cause even more serious problems than TiProxy reboot, so we don't recover panics.
-	cm.wg.Run(func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case cfg := <-cfgch:
-				// If cfgch is closed, it will always come here. But if cfgch is nil, it won't come here.
-				if cfg == nil {
-					cm.logger.Warn("config channel is closed, stop watching channel")
-					cfgch = nil
-					break
-				}
-				cm.setConfig(cfg)
-				_ = cm.reload()
-			case <-time.After(time.Duration(cm.retryInterval.Load())):
-				_ = cm.reload()
-			}
-		}
-	})
 }
 
 // If any error happens, we still continue and use the old cert.
@@ -122,11 +88,4 @@ func (cm *CertManager) reload() error {
 		cm.logger.Error("failed to reload some certs", zap.Error(err))
 	}
 	return err
-}
-
-func (cm *CertManager) Close() {
-	if cm.cancel != nil {
-		cm.cancel()
-	}
-	cm.wg.Wait()
 }

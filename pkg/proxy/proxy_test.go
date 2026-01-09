@@ -30,10 +30,10 @@ func TestCreateConn(t *testing.T) {
 	lg, _ := logger.CreateLoggerForTest(t)
 	cfg := &config.Config{}
 	certManager := cert.NewCertManager()
-	require.NoError(t, certManager.Init(cfg, lg, nil))
+	require.NoError(t, certManager.Init(cfg, lg))
 	server, err := NewSQLServer(lg, cfg, certManager, id.NewIDManager(), &mockHsHandler{})
 	require.NoError(t, err)
-	server.Run(context.Background(), nil)
+	server.Run(context.Background())
 	defer func() {
 		server.PreClose()
 		require.NoError(t, server.Close())
@@ -136,7 +136,7 @@ func TestGracefulCloseConn(t *testing.T) {
 func TestGracefulShutDown(t *testing.T) {
 	lg, _ := logger.CreateLoggerForTest(t)
 	certManager := cert.NewCertManager()
-	err := certManager.Init(&config.Config{}, lg, nil)
+	err := certManager.Init(&config.Config{}, lg)
 	require.NoError(t, err)
 	cfg := &config.Config{
 		Proxy: config.ProxyServer{
@@ -148,7 +148,7 @@ func TestGracefulShutDown(t *testing.T) {
 	}
 	server, err := NewSQLServer(lg, cfg, certManager, id.NewIDManager(), &mockHsHandler{})
 	require.NoError(t, err)
-	server.Run(context.Background(), nil)
+	server.Run(context.Background())
 
 	var wg waitgroup.WaitGroup
 	wg.Run(func() {
@@ -178,7 +178,7 @@ func TestGracefulShutDown(t *testing.T) {
 func TestMultiAddr(t *testing.T) {
 	lg, _ := logger.CreateLoggerForTest(t)
 	certManager := cert.NewCertManager()
-	err := certManager.Init(&config.Config{}, lg, nil)
+	err := certManager.Init(&config.Config{}, lg)
 	require.NoError(t, err)
 	server, err := NewSQLServer(lg, &config.Config{
 		Proxy: config.ProxyServer{
@@ -186,7 +186,7 @@ func TestMultiAddr(t *testing.T) {
 		},
 	}, certManager, id.NewIDManager(), &mockHsHandler{})
 	require.NoError(t, err)
-	server.Run(context.Background(), nil)
+	server.Run(context.Background())
 
 	require.Len(t, server.listeners, 2)
 	for _, listener := range server.listeners {
@@ -197,47 +197,12 @@ func TestMultiAddr(t *testing.T) {
 
 	server.PreClose()
 	require.NoError(t, server.Close())
-	certManager.Close()
-}
-
-func TestWatchCfg(t *testing.T) {
-	lg, _ := logger.CreateLoggerForTest(t)
-	hsHandler := backend.NewDefaultHandshakeHandler(nil)
-	cfgch := make(chan *config.Config)
-	server, err := NewSQLServer(lg, &config.Config{}, nil, id.NewIDManager(), hsHandler)
-	require.NoError(t, err)
-	server.Run(context.Background(), cfgch)
-	cfg := &config.Config{
-		Proxy: config.ProxyServer{
-			ProxyServerOnline: config.ProxyServerOnline{
-				MaxConnections:           100,
-				ConnBufferSize:           1024 * 1024,
-				ProxyProtocol:            "v2",
-				GracefulCloseConnTimeout: 100,
-			},
-		},
-		Security: config.Security{
-			RequireBackendTLS: true,
-		},
-	}
-	cfgch <- cfg
-	require.Eventually(t, func() bool {
-		server.mu.RLock()
-		defer server.mu.RUnlock()
-		return server.mu.requireBackendTLS == cfg.Security.RequireBackendTLS &&
-			server.mu.maxConnections == cfg.Proxy.MaxConnections &&
-			server.mu.connBufferSize == cfg.Proxy.ConnBufferSize &&
-			server.mu.proxyProtocol == (cfg.Proxy.ProxyProtocol != "") &&
-			server.mu.gracefulWait == cfg.Proxy.GracefulWaitBeforeShutdown
-	}, 3*time.Second, 10*time.Millisecond)
-	server.PreClose()
-	require.NoError(t, server.Close())
 }
 
 func TestRecoverPanic(t *testing.T) {
 	lg, text := logger.CreateLoggerForTest(t)
 	certManager := cert.NewCertManager()
-	err := certManager.Init(&config.Config{}, lg, nil)
+	err := certManager.Init(&config.Config{}, lg)
 	require.NoError(t, err)
 	server, err := NewSQLServer(lg, &config.Config{}, certManager, id.NewIDManager(), &mockHsHandler{
 		handshakeResp: func(ctx backend.ConnContext, _ *pnet.HandshakeResp) error {
@@ -248,7 +213,7 @@ func TestRecoverPanic(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	server.Run(context.Background(), nil)
+	server.Run(context.Background())
 
 	_, port, err := net.SplitHostPort(server.listeners[0].Addr().String())
 	require.NoError(t, err)
@@ -264,7 +229,6 @@ func TestRecoverPanic(t *testing.T) {
 	require.NoError(t, mdb.Close())
 	server.PreClose()
 	require.NoError(t, server.Close())
-	certManager.Close()
 }
 
 type mockHsHandler struct {

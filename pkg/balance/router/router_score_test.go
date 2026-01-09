@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/lib/util/logger"
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
@@ -535,7 +534,7 @@ func TestConcurrency(t *testing.T) {
 	router := NewScoreBasedRouter(lg)
 	bo := newMockBackendObserver()
 	bo.Start(context.Background())
-	router.Init(context.Background(), bo, policy.NewSimpleBalancePolicy(), nil, make(<-chan *config.Config))
+	router.Init(context.Background(), bo, policy.NewSimpleBalancePolicy(), nil)
 	t.Cleanup(bo.Close)
 	t.Cleanup(router.Close)
 
@@ -627,7 +626,7 @@ func TestRefresh(t *testing.T) {
 	rt := NewScoreBasedRouter(lg)
 	bo := newMockBackendObserver()
 	bo.Start(context.Background())
-	rt.Init(context.Background(), bo, policy.NewSimpleBalancePolicy(), nil, make(<-chan *config.Config))
+	rt.Init(context.Background(), bo, policy.NewSimpleBalancePolicy(), nil)
 	t.Cleanup(bo.Close)
 	t.Cleanup(rt.Close)
 	// The initial backends are empty.
@@ -647,7 +646,7 @@ func TestObserveError(t *testing.T) {
 	rt := NewScoreBasedRouter(lg)
 	bo := newMockBackendObserver()
 	bo.Start(context.Background())
-	rt.Init(context.Background(), bo, policy.NewSimpleBalancePolicy(), nil, make(<-chan *config.Config))
+	rt.Init(context.Background(), bo, policy.NewSimpleBalancePolicy(), nil)
 	t.Cleanup(bo.Close)
 	t.Cleanup(rt.Close)
 	// Mock an observe error.

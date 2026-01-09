@@ -53,7 +53,7 @@ func (mgr *namespaceManager) buildNamespace(cfg *config.Namespace) (*Namespace, 
 	bo := observer.NewDefaultBackendObserver(logger.Named("observer"), healthCheckCfg, fetcher, hc)
 	bo.Start(context.Background())
 	balancePolicy := factor.NewFactorBasedBalance(logger.Named("factor"))
-	rt.Init(context.Background(), bo, balancePolicy, mgr.cfgMgr.GetConfig(), mgr.cfgMgr.WatchConfig())
+	rt.Init(context.Background(), bo, balancePolicy, mgr.cfgMgr.GetConfig())
 
 	return &Namespace{
 		name:   cfg.Namespace,

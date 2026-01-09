@@ -90,24 +90,9 @@ func (s *SQLServer) reset(cfg *config.Config) {
 	s.mu.Unlock()
 }
 
-func (s *SQLServer) Run(ctx context.Context, cfgch <-chan *config.Config) {
+func (s *SQLServer) Run(ctx context.Context) {
 	// Create another context because it still needs to run after graceful shutdown.
 	ctx, s.cancelFunc = context.WithCancel(context.Background())
-
-	s.wg.RunWithRecover(func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case ach := <-cfgch:
-				if ach == nil {
-					// prevent panic on closing chan
-					return
-				}
-				s.reset(ach)
-			}
-		}
-	}, nil, s.logger)
 
 	for i := range s.listeners {
 		j := i

@@ -49,7 +49,6 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 	if srv.loggerManager, lg, err = logger.NewLoggerManager(nil); err != nil {
 		return
 	}
-	srv.loggerManager.Init(srv.configManager.WatchConfig())
 
 	// setup config manager
 	if err = srv.configManager.Init(ctx, lg.Named("config"), sctx.ConfigFile, sctx.AdvertiseAddr); err != nil {
@@ -70,7 +69,7 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 	srv.loggerManager.SetLoggerLevel(level)
 
 	// setup certs
-	if err = srv.certManager.Init(cfg, lg.Named("cert"), srv.configManager.WatchConfig()); err != nil {
+	if err = srv.certManager.Init(cfg, lg.Named("cert")); err != nil {
 		return
 	}
 
@@ -108,7 +107,7 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 		if err != nil {
 			return
 		}
-		srv.proxy.Run(ctx, srv.configManager.WatchConfig())
+		srv.proxy.Run(ctx)
 	}
 
 	ready.Toggle()
@@ -144,12 +143,6 @@ func (s *Server) Close() error {
 	}
 	if s.namespaceManager != nil {
 		errs = append(errs, s.namespaceManager.Close())
-	}
-	if s.configManager != nil {
-		errs = append(errs, s.configManager.Close())
-	}
-	if s.loggerManager != nil {
-		errs = append(errs, s.loggerManager.Close())
 	}
 	s.wg.Wait()
 	return errors.Collect(ErrCloseServer, errs...)
