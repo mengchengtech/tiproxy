@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -35,31 +34,11 @@ func TestConfig(t *testing.T) {
 	doHTTP(t, http.MethodPut, "/api/admin/config", httpOpts{reader: strings.NewReader("security.require-backend-tls = true")}, func(t *testing.T, r *http.Response) {
 		require.Equal(t, http.StatusOK, r.StatusCode)
 	})
-	sum := ""
-	sumreg := regexp.MustCompile(`{"config_checksum":(.+)}`)
-	doHTTP(t, http.MethodGet, "/api/debug/health", httpOpts{}, func(t *testing.T, r *http.Response) {
-		all, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		sum = string(sumreg.Find(all))
-		require.Equal(t, http.StatusOK, r.StatusCode)
-	})
 	doHTTP(t, http.MethodPut, "/api/admin/config", httpOpts{reader: strings.NewReader("proxy.require-back = false")}, func(t *testing.T, r *http.Response) {
 		// no error
 		require.Equal(t, http.StatusOK, r.StatusCode)
 	})
-	doHTTP(t, http.MethodGet, "/api/debug/health", httpOpts{}, func(t *testing.T, r *http.Response) {
-		all, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		require.Equal(t, sum, string(sumreg.Find(all)))
-		require.Equal(t, http.StatusOK, r.StatusCode)
-	})
 	doHTTP(t, http.MethodPut, "/api/admin/config", httpOpts{reader: strings.NewReader("security.require-backend-tls = false")}, func(t *testing.T, r *http.Response) {
-		require.Equal(t, http.StatusOK, r.StatusCode)
-	})
-	doHTTP(t, http.MethodGet, "/api/debug/health", httpOpts{}, func(t *testing.T, r *http.Response) {
-		all, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		require.NotEqual(t, sum, string(sumreg.Find(all)))
 		require.Equal(t, http.StatusOK, r.StatusCode)
 	})
 }

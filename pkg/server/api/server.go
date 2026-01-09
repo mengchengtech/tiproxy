@@ -107,8 +107,6 @@ func NewServer(cfg config.API, lg *zap.Logger, mgr Managers, handler HTTPHandler
 
 	h.registerGrpc(mgr.CfgMgr)
 	h.registerAPI(engine.Group("/api"))
-	// The paths are consistent with other components.
-	h.registerDebug(engine.Group("debug"))
 
 	if handler != nil {
 		if err := handler.RegisterHTTP(engine); err != nil {
@@ -194,7 +192,6 @@ func (h *Server) registerAPI(g *gin.RouterGroup) {
 		h.registerConfig(adminGroup.Group("config"))
 	}
 
-	h.registerDebug(g.Group("debug"))
 	h.registerTraffic(g.Group("traffic"))
 }
 
