@@ -74,8 +74,6 @@ func TestInit(t *testing.T) {
 			name: "empty",
 			check: func(t *testing.T, cm *CertManager) {
 				require.Nil(t, cm.ServerSQLTLS())
-				require.Nil(t, cm.ClusterTLS())
-				require.Nil(t, cm.ServerHTTPTLS())
 				require.Nil(t, cm.SQLTLS())
 			},
 		},
@@ -83,16 +81,12 @@ func TestInit(t *testing.T) {
 			name: "server config",
 			cfg: config.Config{
 				Security: config.Security{
-					ServerSQLTLS:  config.TLSConfig{AutoCerts: true},
-					ServerHTTPTLS: config.TLSConfig{AutoCerts: true},
-					ClusterTLS:    config.TLSConfig{AutoCerts: true},
-					SQLTLS:        config.TLSConfig{AutoCerts: true},
+					ServerSQLTLS: config.TLSConfig{AutoCerts: true},
+					SQLTLS:       config.TLSConfig{AutoCerts: true},
 				},
 			},
 			check: func(t *testing.T, cm *CertManager) {
-				require.Nil(t, cm.ClusterTLS())
 				require.Nil(t, cm.SQLTLS())
-				require.NotNil(t, cm.ServerHTTPTLS())
 				require.NotNil(t, cm.ServerSQLTLS())
 			},
 		},
@@ -100,16 +94,12 @@ func TestInit(t *testing.T) {
 			name: "client config",
 			cfg: config.Config{
 				Security: config.Security{
-					ServerSQLTLS:  config.TLSConfig{SkipCA: true},
-					ServerHTTPTLS: config.TLSConfig{SkipCA: true},
-					ClusterTLS:    config.TLSConfig{SkipCA: true},
-					SQLTLS:        config.TLSConfig{SkipCA: true},
+					ServerSQLTLS: config.TLSConfig{SkipCA: true},
+					SQLTLS:       config.TLSConfig{SkipCA: true},
 				},
 			},
 			check: func(t *testing.T, cm *CertManager) {
-				require.NotNil(t, cm.ClusterTLS())
 				require.NotNil(t, cm.SQLTLS())
-				require.Nil(t, cm.ServerHTTPTLS())
 				require.Nil(t, cm.ServerSQLTLS())
 			},
 		},

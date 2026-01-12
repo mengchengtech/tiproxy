@@ -4,7 +4,6 @@
 package api
 
 import (
-	"crypto/tls"
 	"net"
 	"net/http"
 	"strings"
@@ -110,10 +109,6 @@ func NewServer(cfg config.API, lg *zap.Logger, mgr Managers, handler HTTPHandler
 		if err := handler.RegisterHTTP(engine); err != nil {
 			return nil, errors.WithStack(err)
 		}
-	}
-
-	if tlscfg := mgr.CertMgr.ServerHTTPTLS(); tlscfg != nil {
-		h.listener = tls.NewListener(h.listener, tlscfg)
 	}
 
 	hsrv := http.Server{

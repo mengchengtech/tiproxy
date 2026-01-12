@@ -107,8 +107,6 @@ func (c TLSConfig) HasCA() bool {
 
 type Security struct {
 	ServerSQLTLS      TLSConfig `yaml:"server-tls,omitempty" toml:"server-tls,omitempty" json:"server-tls,omitempty"`
-	ServerHTTPTLS     TLSConfig `yaml:"server-http-tls,omitempty" toml:"server-http-tls,omitempty" json:"server-http-tls,omitempty"`
-	ClusterTLS        TLSConfig `yaml:"cluster-tls,omitempty" toml:"cluster-tls,omitempty" json:"cluster-tls,omitempty"`
 	SQLTLS            TLSConfig `yaml:"sql-tls,omitempty" toml:"sql-tls,omitempty" json:"sql-tls,omitempty"`
 	RequireBackendTLS bool      `yaml:"require-backend-tls,omitempty" toml:"require-backend-tls,omitempty" json:"require-backend-tls,omitempty" reloadable:"true"`
 }
@@ -151,8 +149,6 @@ func NewConfig() *Config {
 
 	cfg.Security.SQLTLS.MinTLSVersion = "1.2"
 	cfg.Security.ServerSQLTLS.MinTLSVersion = "1.2"
-	cfg.Security.ServerHTTPTLS.MinTLSVersion = "1.2"
-	cfg.Security.ClusterTLS.MinTLSVersion = "1.2"
 
 	return &cfg
 }

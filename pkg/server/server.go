@@ -92,11 +92,6 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 		return
 	}
 
-	// general cluster HTTP client
-	{
-		srv.httpCli = http.NewHTTPClient(srv.certManager.ClusterTLS)
-	}
-
 	// setup info syncer
 	if cfg.Proxy.PDAddrs != "" {
 		srv.infoSyncer = infosync.NewInfoSyncer(lg.Named("infosync"), srv.etcdCli)

@@ -35,7 +35,6 @@ func InitEtcdClient(logger *zap.Logger, cfg *config.Config, certMgr *cert.CertMa
 	logger.Info("connect ETCD servers", zap.Strings("addrs", pdEndpoints))
 	etcdClient, err := clientv3.New(clientv3.Config{
 		Endpoints:        pdEndpoints,
-		TLS:              certMgr.ClusterTLS(),
 		Logger:           logger.Named("etcdcli"),
 		AutoSyncInterval: 30 * time.Second,
 		DialTimeout:      5 * time.Second,
