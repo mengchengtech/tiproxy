@@ -57,9 +57,7 @@ func TestGracefulCloseConn(t *testing.T) {
 	hsHandler := backend.NewDefaultHandshakeHandler(nil)
 	cfg := &config.Config{
 		Proxy: config.ProxyServer{
-			ProxyServerOnline: config.ProxyServerOnline{
-				GracefulCloseConnTimeout: 10,
-			},
+			GracefulCloseConnTimeout: 10,
 		},
 	}
 	server, err := NewSQLServer(lg, cfg, nil, id.NewIDManager(), hsHandler)
@@ -140,10 +138,8 @@ func TestGracefulShutDown(t *testing.T) {
 	require.NoError(t, err)
 	cfg := &config.Config{
 		Proxy: config.ProxyServer{
-			ProxyServerOnline: config.ProxyServerOnline{
-				GracefulWaitBeforeShutdown: 2,
-				GracefulCloseConnTimeout:   10,
-			},
+			GracefulWaitBeforeShutdown: 2,
+			GracefulCloseConnTimeout:   10,
 		},
 	}
 	server, err := NewSQLServer(lg, cfg, certManager, id.NewIDManager(), &mockHsHandler{})

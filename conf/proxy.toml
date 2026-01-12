@@ -2,7 +2,6 @@
 
 [proxy]
 # addr = "0.0.0.0:6000"
-# advertise-addr = ""
 # tcp-keep-alive = true
 
 # possible values:
@@ -22,11 +21,6 @@
 #   15 => close connections when they have finished current transactions (AKA drain clients). After 15s, force closing all the connections.
 
 graceful-close-conn-timeout = 15
-
-# possible values:
-#		"" => enable static routing.
-#		"pd-addr:pd-port" => automatically tidb discovery.
-# pd-addrs = "127.0.0.1:2379"
 
 # possible values:
 #		0 => no limitation.

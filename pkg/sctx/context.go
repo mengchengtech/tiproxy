@@ -8,7 +8,6 @@ import (
 )
 
 type Context struct {
-	AdvertiseAddr string
-	ConfigFile    string
-	Handler       backend.HandshakeHandler
+	ConfigFile string
+	Handler    backend.HandshakeHandler
 }

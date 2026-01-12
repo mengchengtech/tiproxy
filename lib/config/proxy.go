@@ -25,7 +25,6 @@ type Config struct {
 	Workdir  string      `yaml:"workdir,omitempty" toml:"workdir,omitempty" json:"workdir,omitempty" reloadable:"false"`
 	Security Security    `yaml:"security,omitempty" toml:"security,omitempty" json:"security,omitempty"`
 	Log      Log         `yaml:"log,omitempty" toml:"log,omitempty" json:"log,omitempty"`
-	HA       HA          `yaml:"ha,omitempty" toml:"ha,omitempty" json:"ha,omitempty"`
 }
 
 type KeepAlive struct {
@@ -40,7 +39,9 @@ type KeepAlive struct {
 	Timeout time.Duration `yaml:"timeout,omitempty" toml:"timeout,omitempty" json:"timeout,omitempty" reloadable:"true"`
 }
 
-type ProxyServerOnline struct {
+type ProxyServer struct {
+	Addr string `yaml:"addr,omitempty" toml:"addr,omitempty" json:"addr,omitempty" reloadable:"false"`
+
 	MaxConnections    uint64    `yaml:"max-connections,omitempty" toml:"max-connections,omitempty" json:"max-connections,omitempty" reloadable:"true"`
 	ConnBufferSize    int       `yaml:"conn-buffer-size,omitempty" toml:"conn-buffer-size,omitempty" json:"conn-buffer-size,omitempty" reloadable:"true"`
 	FrontendKeepalive KeepAlive `yaml:"frontend-keepalive" toml:"frontend-keepalive" json:"frontend-keepalive"`
@@ -54,13 +55,6 @@ type ProxyServerOnline struct {
 	// In k8s, the pod terminationGracePeriodSeconds can be set to very long so that these configs can be updated online.
 	GracefulWaitBeforeShutdown int `yaml:"graceful-wait-before-shutdown,omitempty" toml:"graceful-wait-before-shutdown,omitempty" json:"graceful-wait-before-shutdown,omitempty" reloadable:"true"`
 	GracefulCloseConnTimeout   int `yaml:"graceful-close-conn-timeout,omitempty" toml:"graceful-close-conn-timeout,omitempty" json:"graceful-close-conn-timeout,omitempty" reloadable:"true"`
-}
-
-type ProxyServer struct {
-	Addr              string `yaml:"addr,omitempty" toml:"addr,omitempty" json:"addr,omitempty" reloadable:"false"`
-	AdvertiseAddr     string `yaml:"advertise-addr,omitempty" toml:"advertise-addr,omitempty" json:"advertise-addr,omitempty" reloadable:"false"`
-	PDAddrs           string `yaml:"pd-addrs,omitempty" toml:"pd-addrs,omitempty" json:"pd-addrs,omitempty" reloadable:"false"`
-	ProxyServerOnline `yaml:",inline" toml:",inline" json:",inline"`
 }
 
 type LogOnline struct {
@@ -105,11 +99,6 @@ type Security struct {
 	RequireBackendTLS bool      `yaml:"require-backend-tls,omitempty" toml:"require-backend-tls,omitempty" json:"require-backend-tls,omitempty" reloadable:"true"`
 }
 
-type HA struct {
-	VirtualIP string `yaml:"virtual-ip,omitempty" toml:"virtual-ip,omitempty" json:"virtual-ip,omitempty" reloadable:"false"`
-	Interface string `yaml:"interface,omitempty" toml:"interface,omitempty" json:"interface,omitempty" reloadable:"false"`
-}
-
 func DefaultKeepAlive() (frontend, backendHealthy, backendUnhealthy KeepAlive) {
 	frontend.Enabled = true
 	backendHealthy.Enabled = true
@@ -130,7 +119,6 @@ func NewConfig() *Config {
 
 	cfg.Proxy.Addr = "0.0.0.0:6000"
 	cfg.Proxy.FrontendKeepalive, cfg.Proxy.BackendHealthyKeepalive, cfg.Proxy.BackendUnhealthyKeepalive = DefaultKeepAlive()
-	cfg.Proxy.PDAddrs = "127.0.0.1:2379"
 	cfg.Proxy.GracefulCloseConnTimeout = 15
 
 	cfg.Log.Level = "info"
@@ -185,27 +173,6 @@ func (cfg *Config) GetIPPort() (ip, port string, err error) {
 	if err != nil {
 		err = errors.WithStack(err)
 		return
-	}
-	// AdvertiseAddr may be a DNS in k8s and certificate SAN typically contains DNS but not IP.
-	if len(cfg.Proxy.AdvertiseAddr) > 0 {
-		ip = cfg.Proxy.AdvertiseAddr
-	} else {
-		// reporting a non unicast IP makes no sense, try to find one
-		// loopback/linklocal-unicast are not global unicast IP, but are valid local unicast IP
-		if pip := net.ParseIP(ip); ip == "" || pip.Equal(net.IPv4bcast) || pip.IsUnspecified() || pip.IsMulticast() {
-			if addrs, err := net.InterfaceAddrs(); err == nil {
-				for _, address := range addrs {
-					if ipnet, ok := address.(*net.IPNet); ok && ipnet.IP.IsGlobalUnicast() {
-						ipStr := ipnet.IP.String()
-						// filter virtual IP
-						if !strings.HasPrefix(cfg.HA.VirtualIP, ipStr) {
-							ip = ipStr
-							break
-						}
-					}
-				}
-			}
-		}
 	}
 	return
 }

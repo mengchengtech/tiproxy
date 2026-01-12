@@ -94,22 +94,7 @@ Where the `session-token-signing-cert` and `session-token-signing-key` are the p
 
 And then start the TiDB cluster with the config.toml.
 
-3. Update the [`proxy.toml`](/conf/proxy.toml) of TiProxy:
-
-```toml
-[proxy]
-    pd-addrs = "127.0.0.1:2379"
-```
-
-Where the `pd-addrs` contains the addresses of all PD instances.
-
-And then start TiProxy:
-
-```shell
-bin/tiproxy --config=conf/proxy.toml
-```
-
-4. Connect to TiProxy with your client. The default port is 6000:
+3. Connect to TiProxy with your client. The default port is 6000:
 
 ```shell
 mysql -h127.0.0.1 -uroot -P6000

@@ -4,28 +4,23 @@
 package config
 
 import (
-	"net"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"github.com/mengchengtech/cerberus/lib/util/sys"
 	"github.com/stretchr/testify/require"
 )
 
 var testProxyConfig = Config{
 	Workdir: "./wd",
 	Proxy: ProxyServer{
-		Addr:    "0.0.0.0:4000",
-		PDAddrs: "127.0.0.1:4089",
-		ProxyServerOnline: ProxyServerOnline{
-			MaxConnections:             1,
-			FrontendKeepalive:          KeepAlive{Enabled: true},
-			ProxyProtocol:              "v2",
-			GracefulWaitBeforeShutdown: 10,
-			ConnBufferSize:             32 * 1024,
-		},
+		Addr:                       "0.0.0.0:4000",
+		MaxConnections:             1,
+		FrontendKeepalive:          KeepAlive{Enabled: true},
+		ProxyProtocol:              "v2",
+		GracefulWaitBeforeShutdown: 10,
+		ConnBufferSize:             32 * 1024,
 	},
 	Log: Log{
 		Encoder: "tidb",
@@ -112,39 +107,28 @@ func TestProxyCheck(t *testing.T) {
 
 func TestGetIPPort(t *testing.T) {
 	for _, cas := range []struct {
-		addr          string
-		advertiseAddr string
-		port          string
-		nonUnicast    bool
+		addr       string
+		port       string
+		nonUnicast bool
 	}{
-		{":34", "", "34", true},
-		{"0.0.0.0:34", "", "34", true},
-		{"255.255.255.255:34", "", "34", true},
-		{"239.255.255.255:34", "", "34", true},
-		{"[FF02::1:FF47]:34", "", "34", true},
-		{"127.0.0.1:34", "", "34", false},
-		{"[F02::1:FF47]:34", "", "34", false},
-		{"192.0.0.1:6049", "", "6049", false},
-		{"0.0.0.0:1000", "tc-tiproxy-0.tc-tiproxy-peer.ns.svc", "1000", false},
+		{":34", "34", true},
+		{"0.0.0.0:34", "34", true},
+		{"255.255.255.255:34", "34", true},
+		{"239.255.255.255:34", "34", true},
+		{"[FF02::1:FF47]:34", "34", true},
+		{"127.0.0.1:34", "34", false},
+		{"[F02::1:FF47]:34", "34", false},
+		{"192.0.0.1:6049", "6049", false},
+		{"0.0.0.0:1000", "1000", false},
 	} {
 		cfg := &Config{
 			Proxy: ProxyServer{
-				Addr:          cas.addr,
-				AdvertiseAddr: cas.advertiseAddr,
+				Addr: cas.addr,
 			},
 		}
-		ip, port, err := cfg.GetIPPort()
+		_, port, err := cfg.GetIPPort()
 		require.NoError(t, err)
 
-		expectedIP := cas.advertiseAddr
-		if len(expectedIP) == 0 {
-			expectedIP, _, err = net.SplitHostPort(cas.addr)
-			require.NoError(t, err)
-			if cas.nonUnicast {
-				expectedIP = sys.GetGlobalUnicastIP()
-			}
-		}
-		require.Equal(t, expectedIP, ip)
 		require.Equal(t, cas.port, port)
 	}
 }

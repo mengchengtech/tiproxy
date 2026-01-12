@@ -31,8 +31,7 @@ type KVValue struct {
 }
 
 type ConfigManager struct {
-	logger        *zap.Logger
-	advertiseAddr string
+	logger *zap.Logger
 
 	kv *btree.BTreeG[KVValue]
 
@@ -47,9 +46,8 @@ func NewConfigManager() *ConfigManager {
 	}
 }
 
-func (e *ConfigManager) Init(ctx context.Context, logger *zap.Logger, configFile string, advertiseAddr string) error {
+func (e *ConfigManager) Init(ctx context.Context, logger *zap.Logger, configFile string) error {
 	e.logger = logger
-	e.advertiseAddr = advertiseAddr
 
 	// for namespace persistence
 	e.kv = btree.NewBTreeG(func(a, b KVValue) bool {

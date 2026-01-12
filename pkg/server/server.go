@@ -51,7 +51,7 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 	}
 
 	// setup config manager
-	if err = srv.configManager.Init(ctx, lg.Named("config"), sctx.ConfigFile, sctx.AdvertiseAddr); err != nil {
+	if err = srv.configManager.Init(ctx, lg.Named("config"), sctx.ConfigFile); err != nil {
 		return
 	}
 	cfg := srv.configManager.GetConfig()
