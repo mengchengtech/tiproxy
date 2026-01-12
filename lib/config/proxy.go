@@ -39,8 +39,25 @@ type KeepAlive struct {
 	Timeout time.Duration `yaml:"timeout,omitempty" toml:"timeout,omitempty" json:"timeout,omitempty" reloadable:"true"`
 }
 
+// HealthCheck contains some configurations for health check.
+// Some general configurations of them may be exposed to users in the future.
+// We can use shorter durations to speed up unit tests.
+type HealthCheck struct {
+	Enable        bool          `yaml:"enable" json:"enable" toml:"enable" reloadable:"false"`
+	Interval      time.Duration `yaml:"interval" json:"interval" toml:"interval" reloadable:"false"`
+	MaxRetries    int           `yaml:"max-retries" json:"max-retries" toml:"max-retries" reloadable:"false"`
+	RetryInterval time.Duration `yaml:"retry-interval" json:"retry-interval" toml:"retry-interval" reloadable:"false"`
+	DialTimeout   time.Duration `yaml:"dial-timeout" json:"dial-timeout" toml:"dial-timeout" reloadable:"false"`
+}
+
+type Backend struct {
+	Instances []string    `yaml:"instances" json:"instances" toml:"instances"`
+	Health    HealthCheck `yaml:"health" json:"health" toml:"health"`
+}
+
 type ProxyServer struct {
-	Addr string `yaml:"addr,omitempty" toml:"addr,omitempty" json:"addr,omitempty" reloadable:"false"`
+	Addr    string  `yaml:"addr,omitempty" toml:"addr,omitempty" json:"addr,omitempty"`
+	Backend Backend `yaml:"backend" json:"backend" toml:"backend"`
 
 	MaxConnections    uint64    `yaml:"max-connections,omitempty" toml:"max-connections,omitempty" json:"max-connections,omitempty" reloadable:"true"`
 	ConnBufferSize    int       `yaml:"conn-buffer-size,omitempty" toml:"conn-buffer-size,omitempty" json:"conn-buffer-size,omitempty" reloadable:"true"`
@@ -130,6 +147,14 @@ func NewConfig() *Config {
 	cfg.Security.SQLTLS.MinTLSVersion = "1.2"
 	cfg.Security.ServerSQLTLS.MinTLSVersion = "1.2"
 
+	cfg.Proxy.Backend.Health = HealthCheck{
+		Enable:        true,
+		Interval:      3 * time.Second,
+		MaxRetries:    3,
+		RetryInterval: 1 * time.Second,
+		DialTimeout:   2 * time.Second,
+	}
+
 	return &cfg
 }
 
@@ -158,6 +183,19 @@ func (cfg *Config) Check() error {
 		return errors.Wrapf(ErrInvalidConfigValue, "conn-buffer-size must be between 1K and 16M")
 	}
 
+	hc := cfg.Proxy.Backend.Health
+	if hc.Interval == 0 {
+		hc.Interval = 3 * time.Second
+	}
+	if hc.MaxRetries == 0 {
+		hc.MaxRetries = 3
+	}
+	if hc.RetryInterval == 0 {
+		hc.RetryInterval = 1 * time.Second
+	}
+	if hc.DialTimeout == 0 {
+		hc.DialTimeout = 3 * time.Second
+	}
 	return nil
 }
 

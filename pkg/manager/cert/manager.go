@@ -19,7 +19,7 @@ const (
 )
 
 // CertManager reloads certs and offers interfaces for fetching TLS configs.
-// Currently, all the namespaces share the same certs but there might be per-namespace
+// Currently, all the routers share the same certs but there might be per-router
 // certs in the future.
 type CertManager struct {
 	serverSQLTLS       *security.CertInfo // client -> proxy

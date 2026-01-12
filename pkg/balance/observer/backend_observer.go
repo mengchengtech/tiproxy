@@ -49,7 +49,6 @@ type DefaultBackendObserver struct {
 // NewDefaultBackendObserver creates a BackendObserver.
 func NewDefaultBackendObserver(logger *zap.Logger, config *config.HealthCheck, backendFetcher BackendFetcher,
 	hc HealthCheck) *DefaultBackendObserver {
-	config.Check()
 	bo := &DefaultBackendObserver{
 		logger:            logger,
 		healthCheckConfig: config,

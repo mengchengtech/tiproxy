@@ -82,6 +82,3 @@ graceful-close-conn-timeout = 15
 
 # require-backend-tls = false
 
-[advance]
-
-# ignore-wrong-namespace = true

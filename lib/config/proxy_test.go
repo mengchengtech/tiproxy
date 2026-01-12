@@ -21,6 +21,7 @@ var testProxyConfig = Config{
 		ProxyProtocol:              "v2",
 		GracefulWaitBeforeShutdown: 10,
 		ConnBufferSize:             32 * 1024,
+		Backend:                    Backend{},
 	},
 	Log: Log{
 		Encoder: "tidb",

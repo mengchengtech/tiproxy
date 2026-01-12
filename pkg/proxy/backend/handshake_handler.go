@@ -7,7 +7,7 @@ import (
 	"github.com/go-mysql-org/go-mysql/mysql"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
-	"github.com/mengchengtech/cerberus/pkg/manager/namespace"
+	routermgr "github.com/mengchengtech/cerberus/pkg/manager/router"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"go.uber.org/zap"
 )
@@ -51,12 +51,12 @@ type HandshakeHandler interface {
 }
 
 type DefaultHandshakeHandler struct {
-	nsManager namespace.NamespaceManager
+	routerManager routermgr.RouterManager
 }
 
-func NewDefaultHandshakeHandler(nsManager namespace.NamespaceManager) *DefaultHandshakeHandler {
+func NewDefaultHandshakeHandler(routerManager routermgr.RouterManager) *DefaultHandshakeHandler {
 	return &DefaultHandshakeHandler{
-		nsManager: nsManager,
+		routerManager: routerManager,
 	}
 }
 
@@ -69,15 +69,7 @@ func (handler *DefaultHandshakeHandler) HandleHandshakeErr(ctx ConnContext, err 
 }
 
 func (handler *DefaultHandshakeHandler) GetRouter(ctx ConnContext, resp *pnet.HandshakeResp) (router.Router, error) {
-	ns, ok := handler.nsManager.GetNamespaceByUser(resp.User)
-	if !ok {
-		ns, ok = handler.nsManager.GetNamespace("default")
-	}
-	if !ok {
-		return nil, errors.New("failed to find a namespace")
-	}
-	ctx.UpdateLogger(zap.String("ns", ns.Name()))
-	return ns.GetRouter(), nil
+	return handler.routerManager.GetRouter(), nil
 }
 
 func (handler *DefaultHandshakeHandler) OnHandshake(ConnContext, string, error, ErrorSource) {

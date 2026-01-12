@@ -7,14 +7,13 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/manager/cert"
 	mgrcfg "github.com/mengchengtech/cerberus/pkg/manager/config"
 	"github.com/mengchengtech/cerberus/pkg/manager/id"
 	"github.com/mengchengtech/cerberus/pkg/manager/logger"
-	mgrns "github.com/mengchengtech/cerberus/pkg/manager/namespace"
+	mgrrouter "github.com/mengchengtech/cerberus/pkg/manager/router"
 	"github.com/mengchengtech/cerberus/pkg/proxy"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
@@ -26,19 +25,19 @@ import (
 type Server struct {
 	wg waitgroup.WaitGroup
 	// managers
-	configManager    *mgrcfg.ConfigManager
-	namespaceManager mgrns.NamespaceManager
-	loggerManager    *logger.LoggerManager
-	certManager      *cert.CertManager
+	configManager *mgrcfg.ConfigManager
+	routerManager mgrrouter.RouterManager
+	loggerManager *logger.LoggerManager
+	certManager   *cert.CertManager
 	// L7 proxy
 	proxy *proxy.SQLServer
 }
 
 func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error) {
 	srv = &Server{
-		configManager:    mgrcfg.NewConfigManager(),
-		namespaceManager: mgrns.NewNamespaceManager(),
-		certManager:      cert.NewCertManager(),
+		configManager: mgrcfg.NewConfigManager(),
+		routerManager: mgrrouter.NewRouterManager(),
+		certManager:   cert.NewCertManager(),
 	}
 
 	handler := sctx.Handler
@@ -75,19 +74,7 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 
 	// setup namespace manager
 	{
-		// no existed namespace
-		nsc := &config.Namespace{
-			Namespace: "default",
-			Backend: config.BackendNamespace{
-				Instances: []string{},
-			},
-		}
-		if err = srv.configManager.SetNamespace(ctx, nsc.Namespace, nsc); err != nil {
-			return
-		}
-		nscs := []*config.Namespace{nsc}
-
-		err = srv.namespaceManager.Init(lg.Named("nsmgr"), nscs, srv.configManager)
+		err = srv.routerManager.Init(lg.Named("nsmgr"), srv.configManager)
 		if err != nil {
 			return
 		}
@@ -97,7 +84,7 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 	if handler != nil {
 		hsHandler = handler
 	} else {
-		hsHandler = backend.NewDefaultHandshakeHandler(srv.namespaceManager)
+		hsHandler = backend.NewDefaultHandshakeHandler(srv.routerManager)
 	}
 
 	// setup proxy server
@@ -140,9 +127,6 @@ func (s *Server) Close() error {
 	errs := make([]error, 0, 4)
 	if s.proxy != nil {
 		errs = append(errs, s.proxy.Close())
-	}
-	if s.namespaceManager != nil {
-		errs = append(errs, s.namespaceManager.Close())
 	}
 	s.wg.Wait()
 	return errors.Collect(ErrCloseServer, errs...)
