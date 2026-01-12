@@ -214,7 +214,3 @@ func (m *mockBalancePolicy) BackendsToBalance(backends []policy.BackendCtx) (fro
 func (m *mockBalancePolicy) SetConfig(cfg *config.Config) {
 	m.cfg.Store(cfg)
 }
-
-func (m *mockBalancePolicy) getConfig() *config.Config {
-	return m.cfg.Load()
-}

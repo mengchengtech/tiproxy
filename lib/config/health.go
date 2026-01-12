@@ -5,10 +5,6 @@ package config
 
 import "time"
 
-type HealthInfo struct {
-	ConfigChecksum uint32 `json:"config_checksum"`
-}
-
 const (
 	healthCheckInterval      = 3 * time.Second
 	healthCheckMaxRetries    = 3

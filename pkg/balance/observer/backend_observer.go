@@ -5,7 +5,6 @@ package observer
 
 import (
 	"context"
-	"maps"
 	"sync"
 	"time"
 
@@ -41,7 +40,6 @@ type DefaultBackendObserver struct {
 	refreshChan       chan struct{}
 	fetcher           BackendFetcher
 	hc                HealthCheck
-	cfgGetter         config.ConfigGetter
 	cancelFunc        context.CancelFunc
 	logger            *zap.Logger
 	healthCheckConfig *config.HealthCheck
@@ -49,8 +47,8 @@ type DefaultBackendObserver struct {
 }
 
 // NewDefaultBackendObserver creates a BackendObserver.
-func NewDefaultBackendObserver(logger *zap.Logger, config *config.HealthCheck, backendFetcher BackendFetcher, hc HealthCheck,
-	cfgGetter config.ConfigGetter) *DefaultBackendObserver {
+func NewDefaultBackendObserver(logger *zap.Logger, config *config.HealthCheck, backendFetcher BackendFetcher,
+	hc HealthCheck) *DefaultBackendObserver {
 	config.Check()
 	bo := &DefaultBackendObserver{
 		logger:            logger,
@@ -62,7 +60,6 @@ func NewDefaultBackendObserver(logger *zap.Logger, config *config.HealthCheck, b
 		subscribers:       make(map[string]chan HealthResult),
 		curBackends:       make(map[string]*BackendHealth),
 		downBackends:      make(map[string]time.Time),
-		cfgGetter:         cfgGetter,
 	}
 	return bo
 }
@@ -128,7 +125,6 @@ func (bo *DefaultBackendObserver) checkHealth(ctx context.Context, backends map[
 
 	// Each goroutine checks one backend.
 	var lock sync.Mutex
-	cfg := bo.cfgGetter.GetConfig()
 	for addr, info := range backends {
 		func(addr string, info *BackendInfo) {
 			bo.wgp.RunWithRecover(func() {
@@ -136,7 +132,6 @@ func (bo *DefaultBackendObserver) checkHealth(ctx context.Context, backends map[
 					return
 				}
 				health := bo.hc.Check(ctx, addr, info)
-				health.setLocal(cfg)
 				lock.Lock()
 				curBackendHealth[addr] = health
 				lock.Unlock()
@@ -176,9 +171,6 @@ func (bo *DefaultBackendObserver) updateHealthResult(result HealthResult) {
 			bo.logger.Info("update backend", zap.String("addr", addr), zap.Stringer("prev", oldHealth), zap.Stringer("cur", newHealth),
 				zap.Int("total", len(bo.curBackends)))
 			delete(bo.downBackends, addr)
-		} else if ok && !maps.Equal(oldHealth.Labels, newHealth.Labels) {
-			bo.logger.Info("update backend labels", zap.String("addr", addr),
-				zap.Any("prev", oldHealth.Labels), zap.Any("cur", newHealth.Labels))
 		}
 	}
 	for addr, oldHealth := range bo.curBackends {

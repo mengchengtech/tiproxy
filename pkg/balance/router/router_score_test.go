@@ -111,13 +111,6 @@ func (tester *routerTester) updateBackendStatusByAddr(addr string, healthy bool)
 	tester.notifyHealth()
 }
 
-func (tester *routerTester) updateBackendLocalityByAddr(addr string, local bool) {
-	health, ok := tester.backends[addr]
-	require.True(tester.t, ok)
-	health.Local = local
-	tester.notifyHealth()
-}
-
 func (tester *routerTester) getBackendByIndex(index int) *backendWrapper {
 	addr := strconv.Itoa(index + 1)
 	backend := tester.router.backends[addr]
@@ -755,11 +748,6 @@ func TestCloseRedirectingConns(t *testing.T) {
 func TestUpdateBackendHealth(t *testing.T) {
 	tester := newRouterTester(t, nil)
 	tester.addBackends(3)
-	// Test locality of some backends are changed.
-	tester.updateBackendLocalityByAddr(tester.getBackendByIndex(0).Addr(), false)
-	tester.updateBackendLocalityByAddr(tester.getBackendByIndex(1).Addr(), true)
-	require.Equal(t, false, tester.router.backends[tester.getBackendByIndex(0).Addr()].Local())
-	require.Equal(t, true, tester.router.backends[tester.getBackendByIndex(1).Addr()].Local())
 	// Test some backends are not in the list anymore.
 	tester.removeBackends(1)
 	tester.checkBackendNum(2)
@@ -772,26 +760,6 @@ func TestUpdateBackendHealth(t *testing.T) {
 	tester.addConnections(90)
 	tester.killBackends(1)
 	tester.checkBackendNum(3)
-}
-
-func TestWatchConfig(t *testing.T) {
-	lg, _ := logger.CreateLoggerForTest(t)
-	router := NewScoreBasedRouter(lg)
-	cfgCh := make(chan *config.Config)
-	policy := &mockBalancePolicy{}
-	cfg := &config.Config{
-		Labels: map[string]string{"k1": "v1"},
-	}
-	router.Init(context.Background(), newMockBackendObserver(), policy, cfg, cfgCh)
-	t.Cleanup(router.Close)
-
-	require.Equal(t, "v1", policy.getConfig().Labels["k1"])
-	cfgCh <- &config.Config{
-		Labels: map[string]string{"k1": "v2"},
-	}
-	require.Eventually(t, func() bool {
-		return policy.getConfig().Labels["k1"] == "v2"
-	}, 3*time.Second, 10*time.Millisecond)
 }
 
 func TestControlSpeed(t *testing.T) {

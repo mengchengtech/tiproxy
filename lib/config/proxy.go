@@ -5,7 +5,6 @@ package config
 
 import (
 	"bytes"
-	"maps"
 	"net"
 	"os"
 	"path/filepath"
@@ -22,15 +21,13 @@ var (
 )
 
 type Config struct {
-	Proxy               ProxyServer       `yaml:"proxy,omitempty" toml:"proxy,omitempty" json:"proxy,omitempty"`
-	API                 API               `yaml:"api,omitempty" toml:"api,omitempty" json:"api,omitempty"`
-	Workdir             string            `yaml:"workdir,omitempty" toml:"workdir,omitempty" json:"workdir,omitempty" reloadable:"false"`
-	Security            Security          `yaml:"security,omitempty" toml:"security,omitempty" json:"security,omitempty"`
-	Log                 Log               `yaml:"log,omitempty" toml:"log,omitempty" json:"log,omitempty"`
-	Balance             Balance           `yaml:"balance,omitempty" toml:"balance,omitempty" json:"balance,omitempty"`
-	Labels              map[string]string `yaml:"labels,omitempty" toml:"labels,omitempty" json:"labels,omitempty" reloadable:"true"`
-	HA                  HA                `yaml:"ha,omitempty" toml:"ha,omitempty" json:"ha,omitempty"`
-	EnableTrafficReplay bool              `yaml:"enable-traffic-replay,omitempty" toml:"enable-traffic-replay,omitempty" json:"enable-traffic-replay,omitempty" reloadable:"true"`
+	Proxy               ProxyServer `yaml:"proxy,omitempty" toml:"proxy,omitempty" json:"proxy,omitempty"`
+	API                 API         `yaml:"api,omitempty" toml:"api,omitempty" json:"api,omitempty"`
+	Workdir             string      `yaml:"workdir,omitempty" toml:"workdir,omitempty" json:"workdir,omitempty" reloadable:"false"`
+	Security            Security    `yaml:"security,omitempty" toml:"security,omitempty" json:"security,omitempty"`
+	Log                 Log         `yaml:"log,omitempty" toml:"log,omitempty" json:"log,omitempty"`
+	HA                  HA          `yaml:"ha,omitempty" toml:"ha,omitempty" json:"ha,omitempty"`
+	EnableTrafficReplay bool        `yaml:"enable-traffic-replay,omitempty" toml:"enable-traffic-replay,omitempty" json:"enable-traffic-replay,omitempty" reloadable:"true"`
 }
 
 type KeepAlive struct {
@@ -158,8 +155,6 @@ func NewConfig() *Config {
 	cfg.Security.ServerHTTPTLS.MinTLSVersion = "1.2"
 	cfg.Security.ClusterTLS.MinTLSVersion = "1.2"
 
-	cfg.Balance = DefaultBalance()
-
 	cfg.EnableTrafficReplay = true
 
 	return &cfg
@@ -167,7 +162,6 @@ func NewConfig() *Config {
 
 func (cfg *Config) Clone() *Config {
 	newCfg := *cfg
-	newCfg.Labels = maps.Clone(cfg.Labels)
 	return &newCfg
 }
 
@@ -189,10 +183,6 @@ func (cfg *Config) Check() error {
 
 	if cfg.Proxy.ConnBufferSize > 0 && (cfg.Proxy.ConnBufferSize > 16*1024*1024 || cfg.Proxy.ConnBufferSize < 1024) {
 		return errors.Wrapf(ErrInvalidConfigValue, "conn-buffer-size must be between 1K and 16M")
-	}
-
-	if err := cfg.Balance.Check(); err != nil {
-		return err
 	}
 
 	return nil

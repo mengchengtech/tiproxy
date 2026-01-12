@@ -113,6 +113,3 @@ graceful-close-conn-timeout = 15
 [advance]
 
 # ignore-wrong-namespace = true
-
-[balance]
-# policy = "resource"

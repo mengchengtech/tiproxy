@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/pkg/manager/infosync"
 	"go.uber.org/atomic"
 )
@@ -56,12 +55,6 @@ func (mbf *mockBackendFetcher) setBackend(addr string, info *BackendInfo) {
 	mbf.Lock()
 	defer mbf.Unlock()
 	mbf.backends[addr] = info
-}
-
-func (mbf *mockBackendFetcher) setLabels(addr string, labels map[string]string) {
-	mbf.Lock()
-	defer mbf.Unlock()
-	mbf.backends[addr].Labels = labels
 }
 
 func (mbf *mockBackendFetcher) removeBackend(addr string) {
@@ -138,22 +131,4 @@ func (handler *mockHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-}
-
-type mockConfigGetter struct {
-	cfg atomic.Pointer[config.Config]
-}
-
-func (cfgGetter *mockConfigGetter) GetConfig() *config.Config {
-	return cfgGetter.cfg.Load()
-}
-
-func (cfgGetter *mockConfigGetter) setConfig(cfg *config.Config) {
-	cfgGetter.cfg.Store(cfg)
-}
-
-func newMockConfigGetter(cfg *config.Config) *mockConfigGetter {
-	cfgGetter := &mockConfigGetter{}
-	cfgGetter.setConfig(cfg)
-	return cfgGetter
 }

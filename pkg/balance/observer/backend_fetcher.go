@@ -47,7 +47,6 @@ func (pf *PDFetcher) GetBackendList(ctx context.Context) (map[string]*BackendInf
 	infos := make(map[string]*BackendInfo, len(backends))
 	for addr, backend := range backends {
 		infos[addr] = &BackendInfo{
-			Labels:     backend.Labels,
 			IP:         backend.IP,
 			StatusPort: backend.StatusPort,
 		}

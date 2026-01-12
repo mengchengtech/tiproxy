@@ -5,10 +5,7 @@ package observer
 
 import (
 	"fmt"
-	"maps"
 	"strings"
-
-	"github.com/mengchengtech/cerberus/lib/config"
 )
 
 type BackendHealth struct {
@@ -18,25 +15,6 @@ type BackendHealth struct {
 	PingErr error
 	// The backend version that returned to the client during handshake.
 	ServerVersion string
-	// Whether the backend in the same zone with TiProxy. If TiProxy location is undefined, take all backends as local.
-	Local bool
-}
-
-func (bh *BackendHealth) setLocal(cfg *config.Config) {
-	if cfg.Labels == nil {
-		bh.Local = true
-		return
-	}
-	selfLocation := cfg.GetLocation()
-	if len(selfLocation) == 0 {
-		bh.Local = true
-		return
-	}
-	if bh.Labels != nil && bh.Labels[config.LocationLabelName] == selfLocation {
-		bh.Local = true
-		return
-	}
-	bh.Local = false
 }
 
 func (bh *BackendHealth) Equals(other BackendHealth) bool {
@@ -59,23 +37,18 @@ func (bh *BackendHealth) String() string {
 		_, _ = sb.WriteString(", version: ")
 		_, _ = sb.WriteString(bh.ServerVersion)
 	}
-	if bh.Labels != nil {
-		_, _ = sb.WriteString(fmt.Sprintf(", labels: %v", bh.Labels))
-	}
 	return sb.String()
 }
 
 // BackendInfo stores the status info of each backend.
 type BackendInfo struct {
-	Labels     map[string]string
 	IP         string
 	StatusPort uint
 }
 
 func (bi BackendInfo) Equals(other BackendInfo) bool {
 	return bi.IP == other.IP &&
-		bi.StatusPort == other.StatusPort &&
-		maps.Equal(bi.Labels, other.Labels)
+		bi.StatusPort == other.StatusPort
 }
 
 // HealthResult contains the health check results and is used to notify the routers.

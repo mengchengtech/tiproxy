@@ -24,6 +24,5 @@ type BackendCtx interface {
 	// ConnScore = current connections + incoming connections - outgoing connections.
 	ConnScore() int
 	Healthy() bool
-	Local() bool
 	GetBackendInfo() observer.BackendInfo
 }

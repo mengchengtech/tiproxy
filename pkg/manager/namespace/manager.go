@@ -27,7 +27,6 @@ type NamespaceManager interface {
 	CommitNamespaces(nss []*config.Namespace, nssDelete []bool) error
 	GetNamespace(nm string) (*Namespace, bool)
 	GetNamespaceByUser(user string) (*Namespace, bool)
-	RedirectConnections() []error
 	Ready() bool
 	Close() error
 }
@@ -60,7 +59,7 @@ func (mgr *namespaceManager) buildNamespace(cfg *config.Namespace) (*Namespace, 
 	// init Router
 	rt := router.NewScoreBasedRouter(logger.Named("router"))
 	hc := observer.NewDefaultHealthCheck(mgr.httpCli, healthCheckCfg, logger.Named("hc"))
-	bo := observer.NewDefaultBackendObserver(logger.Named("observer"), healthCheckCfg, fetcher, hc, mgr.cfgMgr)
+	bo := observer.NewDefaultBackendObserver(logger.Named("observer"), healthCheckCfg, fetcher, hc)
 	bo.Start(context.Background())
 	balancePolicy := factor.NewFactorBasedBalance(logger.Named("factor"))
 	rt.Init(context.Background(), bo, balancePolicy, mgr.cfgMgr.GetConfig(), mgr.cfgMgr.WatchConfig())
@@ -129,20 +128,6 @@ func (mgr *namespaceManager) GetNamespaceByUser(user string) (*Namespace, bool) 
 		}
 	}
 	return nil, false
-}
-
-func (mgr *namespaceManager) RedirectConnections() []error {
-	mgr.RLock()
-	defer mgr.RUnlock()
-
-	var errs []error
-	for _, ns := range mgr.nsm {
-		err1 := ns.GetRouter().RedirectConnections()
-		if err1 != nil {
-			errs = append(errs, err1)
-		}
-	}
-	return errs
 }
 
 func (mgr *namespaceManager) Ready() bool {

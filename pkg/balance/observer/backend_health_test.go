@@ -17,12 +17,10 @@ func TestBackendHealthToString(t *testing.T) {
 			BackendInfo: BackendInfo{
 				IP:         "127.0.0.1",
 				StatusPort: 1,
-				Labels:     map[string]string{"k1": "v1", "k2": "v2"},
 			},
 			Healthy:       true,
 			PingErr:       errors.New("mock error"),
 			ServerVersion: "v1.0.0",
-			Local:         true,
 		},
 	}
 	// Just test no error happens
@@ -46,30 +44,12 @@ func TestBackendHealthEquals(t *testing.T) {
 				BackendInfo: BackendInfo{
 					IP:         "127.0.0.1",
 					StatusPort: 1,
-					Labels:     map[string]string{"k1": "v1", "k2": "v2"},
 				},
 			},
 			b: BackendHealth{
 				BackendInfo: BackendInfo{
 					IP:         "127.0.0.1",
 					StatusPort: 1,
-				},
-			},
-			equal: false,
-		},
-		{
-			a: BackendHealth{
-				BackendInfo: BackendInfo{
-					IP:         "127.0.0.1",
-					StatusPort: 1,
-					Labels:     map[string]string{"k1": "v1", "k2": "v2"},
-				},
-			},
-			b: BackendHealth{
-				BackendInfo: BackendInfo{
-					IP:         "127.0.0.1",
-					StatusPort: 1,
-					Labels:     map[string]string{"k1": "v1", "k2": "v2"},
 				},
 			},
 			equal: true,
@@ -79,12 +59,10 @@ func TestBackendHealthEquals(t *testing.T) {
 				BackendInfo: BackendInfo{
 					IP:         "127.0.0.1",
 					StatusPort: 1,
-					Labels:     map[string]string{"k1": "v1", "k2": "v2"},
 				},
 				Healthy:       true,
 				PingErr:       errors.New("mock error"),
 				ServerVersion: "v1.0.0",
-				Local:         true,
 			},
 			b:     BackendHealth{},
 			equal: false,

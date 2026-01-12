@@ -77,7 +77,6 @@ type RedirectableConn interface {
 type BackendInst interface {
 	Addr() string
 	Healthy() bool
-	Local() bool
 }
 
 // backendWrapper contains the connections on the backend.
@@ -141,13 +140,6 @@ func (b *backendWrapper) ServerVersion() string {
 
 func (b *backendWrapper) ConnCount() int {
 	return b.connList.Len()
-}
-
-func (b *backendWrapper) Local() bool {
-	b.mu.RLock()
-	local := b.mu.Local
-	b.mu.RUnlock()
-	return local
 }
 
 func (b *backendWrapper) GetBackendInfo() observer.BackendInfo {

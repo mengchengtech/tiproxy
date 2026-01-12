@@ -36,7 +36,6 @@ func TestPDFetcher(t *testing.T) {
 				require.NotNil(t, m["1.1.1.1:4000"])
 				require.Equal(t, "1.1.1.1", m["1.1.1.1:4000"].IP)
 				require.Equal(t, uint(10080), m["1.1.1.1:4000"].StatusPort)
-				require.Equal(t, map[string]string{"k1": "v1"}, m["1.1.1.1:4000"].Labels)
 			},
 		},
 		{
