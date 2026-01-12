@@ -5,17 +5,13 @@ package observer
 
 import (
 	"context"
-	"crypto/tls"
-	"encoding/json"
 	"net"
-	"strconv"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
-	"github.com/mengchengtech/cerberus/pkg/util/http"
 	"go.uber.org/zap"
 )
 
@@ -24,30 +20,15 @@ type HealthCheck interface {
 	Check(ctx context.Context, addr string, info *BackendInfo) *BackendHealth
 }
 
-const (
-	statusPathSuffix = "/status"
-)
-
-type backendHttpStatusRespBody struct {
-	Connections int    `json:"connections"`
-	Version     string `json:"version"`
-	GitHash     string `json:"git_hash"`
-}
-
 type DefaultHealthCheck struct {
-	cfg     *config.HealthCheck
-	logger  *zap.Logger
-	httpCli *http.Client
+	cfg    *config.HealthCheck
+	logger *zap.Logger
 }
 
-func NewDefaultHealthCheck(httpCli *http.Client, cfg *config.HealthCheck, logger *zap.Logger) *DefaultHealthCheck {
-	if httpCli == nil {
-		httpCli = http.NewHTTPClient(func() *tls.Config { return nil })
-	}
+func NewDefaultHealthCheck(cfg *config.HealthCheck, logger *zap.Logger) *DefaultHealthCheck {
 	return &DefaultHealthCheck{
-		httpCli: httpCli,
-		cfg:     cfg,
-		logger:  logger,
+		cfg:    cfg,
+		logger: logger,
 	}
 }
 
@@ -59,7 +40,6 @@ func (dhc *DefaultHealthCheck) Check(ctx context.Context, addr string, info *Bac
 	if !dhc.cfg.Enable {
 		return bh
 	}
-	dhc.checkStatusPort(ctx, info, bh)
 	if !bh.Healthy {
 		return bh
 	}
@@ -70,7 +50,7 @@ func (dhc *DefaultHealthCheck) Check(ctx context.Context, addr string, info *Bac
 func (dhc *DefaultHealthCheck) checkSqlPort(ctx context.Context, addr string, bh *BackendHealth) {
 	// Also dial the SQL port just in case that the SQL port hangs.
 	b := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(dhc.cfg.RetryInterval), uint64(dhc.cfg.MaxRetries)), ctx)
-	err := http.ConnectWithRetry(func() error {
+	err := connectWithRetry(func() error {
 		conn, err := net.DialTimeout("tcp", addr, dhc.cfg.DialTimeout)
 		if err != nil {
 			return err
@@ -92,32 +72,13 @@ func (dhc *DefaultHealthCheck) checkSqlPort(ctx context.Context, addr string, bh
 	}
 }
 
-// When a backend gracefully shut down, the status port returns 500 but the SQL port still accepts
-// new connections.
-func (dhc *DefaultHealthCheck) checkStatusPort(ctx context.Context, info *BackendInfo, bh *BackendHealth) {
-	if ctx.Err() != nil {
-		return
-	}
-	// Using static backends, no status port.
-	if info == nil || len(info.IP) == 0 {
-		return
-	}
-
-	addr := net.JoinHostPort(info.IP, strconv.Itoa(int(info.StatusPort)))
-	b := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(dhc.cfg.RetryInterval), uint64(dhc.cfg.MaxRetries)), ctx)
-	resp, err := dhc.httpCli.Get(addr, statusPathSuffix, b, dhc.cfg.DialTimeout)
-	if err == nil {
-		var respBody backendHttpStatusRespBody
-		err = json.Unmarshal(resp, &respBody)
-		if err != nil {
-			dhc.logger.Error("unmarshal body in healthy check failed", zap.String("addr", addr), zap.String("resp body", string(resp)), zap.Error(err))
-		} else {
-			bh.ServerVersion = respBody.Version
+func connectWithRetry(connect func() error, b backoff.BackOff) error {
+	err := backoff.Retry(func() error {
+		err := connect()
+		if !pnet.IsRetryableError(err) {
+			return backoff.Permanent(err)
 		}
-	}
-
-	if err != nil {
-		bh.Healthy = false
-		bh.PingErr = errors.Wrapf(err, "connect status port failed")
-	}
+		return err
+	}, b)
+	return err
 }

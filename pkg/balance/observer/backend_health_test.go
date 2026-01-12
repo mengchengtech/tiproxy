@@ -18,9 +18,8 @@ func TestBackendHealthToString(t *testing.T) {
 				IP:         "127.0.0.1",
 				StatusPort: 1,
 			},
-			Healthy:       true,
-			PingErr:       errors.New("mock error"),
-			ServerVersion: "v1.0.0",
+			Healthy: true,
+			PingErr: errors.New("mock error"),
 		},
 	}
 	// Just test no error happens
@@ -60,20 +59,10 @@ func TestBackendHealthEquals(t *testing.T) {
 					IP:         "127.0.0.1",
 					StatusPort: 1,
 				},
-				Healthy:       true,
-				PingErr:       errors.New("mock error"),
-				ServerVersion: "v1.0.0",
+				Healthy: true,
+				PingErr: errors.New("mock error"),
 			},
 			b:     BackendHealth{},
-			equal: false,
-		},
-		{
-			a: BackendHealth{
-				ServerVersion: "v1.0.0",
-			},
-			b: BackendHealth{
-				ServerVersion: "v1.1.0",
-			},
 			equal: false,
 		},
 	}

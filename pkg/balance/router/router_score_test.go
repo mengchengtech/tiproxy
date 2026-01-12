@@ -681,26 +681,6 @@ func TestSetBackendStatus(t *testing.T) {
 	}
 }
 
-func TestGetServerVersion(t *testing.T) {
-	lg, _ := logger.CreateLoggerForTest(t)
-	rt := NewScoreBasedRouter(lg)
-	t.Cleanup(rt.Close)
-	backends := map[string]*observer.BackendHealth{
-		"0": {
-			Healthy:       true,
-			ServerVersion: "1.0",
-		},
-		"1": {
-			Healthy:       true,
-			ServerVersion: "2.0",
-		},
-	}
-	result := observer.NewHealthResult(backends, nil)
-	rt.updateBackendHealth(result)
-	version := rt.ServerVersion()
-	require.True(t, version == "1.0" || version == "2.0")
-}
-
 func TestBackendHealthy(t *testing.T) {
 	// Make the connection redirect.
 	tester := newRouterTester(t, nil)

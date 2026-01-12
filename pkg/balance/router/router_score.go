@@ -290,16 +290,12 @@ func (router *ScoreBasedRouter) updateBackendHealth(healthResults observer.Healt
 		if !ok && health.Healthy {
 			router.logger.Debug("add new backend to router", zap.String("addr", addr), zap.Stringer("health", health))
 			router.backends[addr] = newBackendWrapper(addr, *health)
-			serverVersion = health.ServerVersion
 		} else if ok {
 			if !health.Equals(backend.getHealth()) {
 				router.logger.Debug("update backend in router", zap.String("addr", addr), zap.Stringer("health", health))
 			}
 			backend.setHealth(*health)
 			router.removeBackendIfEmpty(backend)
-			if health.Healthy {
-				serverVersion = health.ServerVersion
-			}
 		} else {
 			router.logger.Debug("unhealthy backend is not in router", zap.String("addr", addr), zap.Stringer("health", health))
 		}
@@ -427,13 +423,6 @@ func (router *ScoreBasedRouter) ConnCount() int {
 		j += backend.connList.Len()
 	}
 	return j
-}
-
-func (router *ScoreBasedRouter) ServerVersion() string {
-	router.Lock()
-	version := router.serverVersion
-	router.Unlock()
-	return version
 }
 
 // Close implements Router.Close interface.

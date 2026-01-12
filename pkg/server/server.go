@@ -19,7 +19,6 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
 	"github.com/mengchengtech/cerberus/pkg/util/etcd"
-	"github.com/mengchengtech/cerberus/pkg/util/http"
 	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.uber.org/atomic"
@@ -35,8 +34,6 @@ type Server struct {
 	certManager      *cert.CertManager
 	// etcd client
 	etcdCli *clientv3.Client
-	// HTTP client
-	httpCli *http.Client
 	// L7 proxy
 	proxy *proxy.SQLServer
 }
@@ -109,7 +106,7 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 			nscs = append(nscs, nsc)
 		}
 
-		err = srv.namespaceManager.Init(lg.Named("nsmgr"), nscs, srv.httpCli, srv.configManager)
+		err = srv.namespaceManager.Init(lg.Named("nsmgr"), nscs, srv.configManager)
 		if err != nil {
 			return
 		}

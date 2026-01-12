@@ -59,10 +59,6 @@ func (r *StaticRouter) ConnCount() int {
 	return r.cnt
 }
 
-func (r *StaticRouter) ServerVersion() string {
-	return ""
-}
-
 func (r *StaticRouter) Close() {
 }
 

@@ -5,12 +5,7 @@ package observer
 
 import (
 	"context"
-	"net/http"
 	"sync"
-	"testing"
-	"time"
-
-	"go.uber.org/atomic"
 )
 
 type mockBackendFetcher struct {
@@ -82,36 +77,4 @@ func (mhc *mockHealthCheck) removeBackend(addr string) {
 	mhc.Lock()
 	defer mhc.Unlock()
 	delete(mhc.backends, addr)
-}
-
-type mockHttpHandler struct {
-	t        *testing.T
-	httpOK   atomic.Bool
-	respBody atomic.String
-	wait     atomic.Int64
-}
-
-func (handler *mockHttpHandler) setHTTPResp(succeed bool) {
-	handler.httpOK.Store(succeed)
-}
-
-func (handler *mockHttpHandler) setHTTPRespBody(body string) {
-	handler.respBody.Store(body)
-}
-
-func (handler *mockHttpHandler) setHTTPWait(wait time.Duration) {
-	handler.wait.Store(int64(wait))
-}
-
-func (handler *mockHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	wait := handler.wait.Load()
-	if wait > 0 {
-		time.Sleep(time.Duration(wait))
-	}
-	if handler.httpOK.Load() {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(handler.respBody.Load()))
-	} else {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
 }

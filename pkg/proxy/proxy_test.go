@@ -280,10 +280,6 @@ func (handler *mockHsHandler) HandleHandshakeResp(ctx backend.ConnContext, resp 
 	return nil
 }
 
-func (handler *mockHsHandler) GetServerVersion() string {
-	return "5.7"
-}
-
 // GetRouter returns an error for the second connection.
 func (handler *mockHsHandler) GetRouter(backend.ConnContext, *pnet.HandshakeResp) (router.Router, error) {
 	return nil, errors.New("no router")

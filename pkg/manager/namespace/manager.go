@@ -16,13 +16,11 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
 	mconfig "github.com/mengchengtech/cerberus/pkg/manager/config"
-	"github.com/mengchengtech/cerberus/pkg/util/http"
 	"go.uber.org/zap"
 )
 
 type NamespaceManager interface {
-	Init(logger *zap.Logger, nscs []*config.Namespace,
-		httpCli *http.Client, cfgMgr *mconfig.ConfigManager) error
+	Init(logger *zap.Logger, nscs []*config.Namespace, cfgMgr *mconfig.ConfigManager) error
 	CommitNamespaces(nss []*config.Namespace, nssDelete []bool) error
 	GetNamespace(nm string) (*Namespace, bool)
 	GetNamespaceByUser(user string) (*Namespace, bool)
@@ -32,10 +30,9 @@ type NamespaceManager interface {
 
 type namespaceManager struct {
 	sync.RWMutex
-	nsm     map[string]*Namespace
-	httpCli *http.Client
-	logger  *zap.Logger
-	cfgMgr  *mconfig.ConfigManager
+	nsm    map[string]*Namespace
+	logger *zap.Logger
+	cfgMgr *mconfig.ConfigManager
 }
 
 func NewNamespaceManager() *namespaceManager {
@@ -52,7 +49,7 @@ func (mgr *namespaceManager) buildNamespace(cfg *config.Namespace) (*Namespace, 
 
 	// init Router
 	rt := router.NewScoreBasedRouter(logger.Named("router"))
-	hc := observer.NewDefaultHealthCheck(mgr.httpCli, healthCheckCfg, logger.Named("hc"))
+	hc := observer.NewDefaultHealthCheck(healthCheckCfg, logger.Named("hc"))
 	bo := observer.NewDefaultBackendObserver(logger.Named("observer"), healthCheckCfg, fetcher, hc)
 	bo.Start(context.Background())
 	balancePolicy := factor.NewFactorBasedBalance(logger.Named("factor"))
@@ -93,10 +90,8 @@ func (mgr *namespaceManager) CommitNamespaces(nss []*config.Namespace, nssDelete
 	return nil
 }
 
-func (mgr *namespaceManager) Init(logger *zap.Logger, nscs []*config.Namespace,
-	httpCli *http.Client, cfgMgr *mconfig.ConfigManager) error {
+func (mgr *namespaceManager) Init(logger *zap.Logger, nscs []*config.Namespace, cfgMgr *mconfig.ConfigManager) error {
 	mgr.Lock()
-	mgr.httpCli = httpCli
 	mgr.logger = logger
 	mgr.cfgMgr = cfgMgr
 	mgr.Unlock()

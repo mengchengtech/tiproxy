@@ -34,8 +34,6 @@ type Router interface {
 	RefreshBackend()
 	RedirectConnections() error
 	ConnCount() int
-	// ServerVersion returns the TiDB version.
-	ServerVersion() string
 	Close()
 }
 
@@ -129,13 +127,6 @@ func (b *backendWrapper) Healthy() bool {
 	healthy := b.mu.Healthy
 	b.mu.RUnlock()
 	return healthy
-}
-
-func (b *backendWrapper) ServerVersion() string {
-	b.mu.RLock()
-	version := b.mu.ServerVersion
-	b.mu.RUnlock()
-	return version
 }
 
 func (b *backendWrapper) ConnCount() int {

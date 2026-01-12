@@ -92,15 +92,6 @@ func (handler *DefaultHandshakeHandler) GetCapability() pnet.Capability {
 }
 
 func (handler *DefaultHandshakeHandler) GetServerVersion() string {
-	// TiProxy sends the server version before getting the router, so we don't know which router to get.
-	// Just get the default one.
-	if ns, ok := handler.nsManager.GetNamespace("default"); ok {
-		if rt := ns.GetRouter(); rt != nil {
-			if serverVersion := rt.ServerVersion(); len(serverVersion) > 0 {
-				return serverVersion
-			}
-		}
-	}
 	return pnet.ServerVersion
 }
 

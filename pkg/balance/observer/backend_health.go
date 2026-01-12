@@ -13,14 +13,11 @@ type BackendHealth struct {
 	Healthy bool
 	// The error occurred when health check fails. It's used to log why the backend becomes unhealthy.
 	PingErr error
-	// The backend version that returned to the client during handshake.
-	ServerVersion string
 }
 
 func (bh *BackendHealth) Equals(other BackendHealth) bool {
 	return bh.BackendInfo.Equals(other.BackendInfo) &&
-		bh.Healthy == other.Healthy &&
-		bh.ServerVersion == other.ServerVersion
+		bh.Healthy == other.Healthy
 }
 
 func (bh *BackendHealth) String() string {
@@ -32,10 +29,6 @@ func (bh *BackendHealth) String() string {
 	}
 	if bh.PingErr != nil {
 		_, _ = sb.WriteString(fmt.Sprintf(", err: %s", bh.PingErr.Error()))
-	}
-	if len(bh.ServerVersion) > 0 {
-		_, _ = sb.WriteString(", version: ")
-		_, _ = sb.WriteString(bh.ServerVersion)
 	}
 	return sb.String()
 }
