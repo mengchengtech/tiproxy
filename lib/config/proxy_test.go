@@ -27,9 +27,6 @@ var testProxyConfig = Config{
 			ConnBufferSize:             32 * 1024,
 		},
 	},
-	API: API{
-		Addr: "0.0.0.0:3080",
-	},
 	Log: Log{
 		Encoder: "tidb",
 		LogOnline: LogOnline{
@@ -135,11 +132,8 @@ func TestGetIPPort(t *testing.T) {
 				Addr:          cas.addr,
 				AdvertiseAddr: cas.advertiseAddr,
 			},
-			API: API{
-				Addr: cas.addr,
-			},
 		}
-		ip, port, statusPort, err := cfg.GetIPPort()
+		ip, port, err := cfg.GetIPPort()
 		require.NoError(t, err)
 
 		expectedIP := cas.advertiseAddr
@@ -152,6 +146,5 @@ func TestGetIPPort(t *testing.T) {
 		}
 		require.Equal(t, expectedIP, ip)
 		require.Equal(t, cas.port, port)
-		require.Equal(t, cas.port, statusPort)
 	}
 }

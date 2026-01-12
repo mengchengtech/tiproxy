@@ -68,28 +68,6 @@ func TestConfigReload(t *testing.T) {
 			},
 		},
 		{
-			name:   "override empty fields",
-			precfg: `api.addr = ""`,
-			precheck: func(c *config.Config) bool {
-				return c.API.Addr == ""
-			},
-			postcfg: `api.addr = "0.0.0.0:3080"`,
-			postcheck: func(c *config.Config) bool {
-				return c.API.Addr == "0.0.0.0:3080"
-			},
-		},
-		{
-			name:   "override non-empty fields",
-			precfg: `api.addr = "0.0.0.0:3080"`,
-			precheck: func(c *config.Config) bool {
-				return c.API.Addr == "0.0.0.0:3080"
-			},
-			postcfg: `api.addr = "0.0.0.0:3081"`,
-			postcheck: func(c *config.Config) bool {
-				return c.API.Addr == "0.0.0.0:3081"
-			},
-		},
-		{
 			name:   "non empty fields should not be override by empty fields",
 			precfg: `proxy.addr = "gg"`,
 			precheck: func(c *config.Config) bool {
@@ -105,7 +83,7 @@ func TestConfigReload(t *testing.T) {
 	for i, tc := range cases {
 		msg := fmt.Sprintf("%s[%d]", tc.name, i)
 
-		// normal path and HTTP API
+		// normal path
 		require.NoError(t, cfgmgr2.SetTOMLConfig([]byte(tc.precfg)), msg)
 		if tc.precheck != nil {
 			require.True(t, tc.precheck(cfgmgr2.GetConfig()), msg)

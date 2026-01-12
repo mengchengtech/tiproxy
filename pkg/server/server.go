@@ -18,7 +18,6 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/proxy"
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
-	"github.com/mengchengtech/cerberus/pkg/server/api"
 	"github.com/mengchengtech/cerberus/pkg/util/etcd"
 	"github.com/mengchengtech/cerberus/pkg/util/http"
 	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
@@ -38,8 +37,6 @@ type Server struct {
 	etcdCli *clientv3.Client
 	// HTTP client
 	httpCli *http.Client
-	// HTTP server
-	apiServer *api.Server
 	// L7 proxy
 	proxy *proxy.SQLServer
 }
@@ -135,16 +132,6 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 		srv.proxy.Run(ctx, srv.configManager.WatchConfig())
 	}
 
-	// setup http & grpc
-	mgrs := api.Managers{
-		CfgMgr:  srv.configManager,
-		NsMgr:   srv.namespaceManager,
-		CertMgr: srv.certManager,
-	}
-	if srv.apiServer, err = api.NewServer(cfg.API, lg.Named("api"), mgrs, handler, ready); err != nil {
-		return
-	}
-
 	ready.Toggle()
 	return
 }
@@ -163,10 +150,6 @@ func printInfo(lg *zap.Logger) {
 }
 
 func (s *Server) preClose() {
-	// Make the API server return unhealth.
-	if s.apiServer != nil {
-		s.apiServer.PreClose()
-	}
 	// Gracefully drain clients.
 	if s.proxy != nil {
 		s.proxy.PreClose()
@@ -179,9 +162,6 @@ func (s *Server) Close() error {
 	errs := make([]error, 0, 4)
 	if s.proxy != nil {
 		errs = append(errs, s.proxy.Close())
-	}
-	if s.apiServer != nil {
-		errs = append(errs, s.apiServer.Close())
 	}
 	if s.namespaceManager != nil {
 		errs = append(errs, s.namespaceManager.Close())

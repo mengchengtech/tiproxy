@@ -22,7 +22,6 @@ var (
 
 type Config struct {
 	Proxy    ProxyServer `yaml:"proxy,omitempty" toml:"proxy,omitempty" json:"proxy,omitempty"`
-	API      API         `yaml:"api,omitempty" toml:"api,omitempty" json:"api,omitempty"`
 	Workdir  string      `yaml:"workdir,omitempty" toml:"workdir,omitempty" json:"workdir,omitempty" reloadable:"false"`
 	Security Security    `yaml:"security,omitempty" toml:"security,omitempty" json:"security,omitempty"`
 	Log      Log         `yaml:"log,omitempty" toml:"log,omitempty" json:"log,omitempty"`
@@ -62,11 +61,6 @@ type ProxyServer struct {
 	AdvertiseAddr     string `yaml:"advertise-addr,omitempty" toml:"advertise-addr,omitempty" json:"advertise-addr,omitempty" reloadable:"false"`
 	PDAddrs           string `yaml:"pd-addrs,omitempty" toml:"pd-addrs,omitempty" json:"pd-addrs,omitempty" reloadable:"false"`
 	ProxyServerOnline `yaml:",inline" toml:",inline" json:",inline"`
-}
-
-type API struct {
-	Addr          string `yaml:"addr,omitempty" toml:"addr,omitempty" json:"addr,omitempty" reloadable:"false"`
-	ProxyProtocol string `yaml:"proxy-protocol,omitempty" toml:"proxy-protocol,omitempty" json:"proxy-protocol,omitempty" reloadable:"false"`
 }
 
 type LogOnline struct {
@@ -139,8 +133,6 @@ func NewConfig() *Config {
 	cfg.Proxy.PDAddrs = "127.0.0.1:2379"
 	cfg.Proxy.GracefulCloseConnTimeout = 15
 
-	cfg.API.Addr = "0.0.0.0:3080"
-
 	cfg.Log.Level = "info"
 	cfg.Log.Encoder = "tidb"
 	cfg.Log.LogFile.MaxSize = 300
@@ -187,14 +179,9 @@ func (cfg *Config) ToBytes() ([]byte, error) {
 	return b.Bytes(), errors.WithStack(err)
 }
 
-func (cfg *Config) GetIPPort() (ip, port, statusPort string, err error) {
+func (cfg *Config) GetIPPort() (ip, port string, err error) {
 	addrs := strings.Split(cfg.Proxy.Addr, ",")
 	ip, port, err = net.SplitHostPort(addrs[0])
-	if err != nil {
-		err = errors.WithStack(err)
-		return
-	}
-	_, statusPort, err = net.SplitHostPort(cfg.API.Addr)
 	if err != nil {
 		err = errors.WithStack(err)
 		return

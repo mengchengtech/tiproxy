@@ -103,8 +103,5 @@ func ConfigForEtcdTest(endpoint string) *config.Config {
 			Addr:    "0.0.0.0:6000",
 			PDAddrs: endpoint,
 		},
-		API: config.API{
-			Addr: "0.0.0.0:3080",
-		},
 	}
 }
