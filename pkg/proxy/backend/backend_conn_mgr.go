@@ -7,11 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/binary"
-	"encoding/json"
-	"fmt"
 	"net"
-	"os"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -24,13 +20,11 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/pingcap/tidb/parser"
-	"github.com/siddontang/go/hack"
 	"go.uber.org/zap"
 )
 
 var (
-	ErrCloseConnMgr    = errors.New("failed to close connection manager")
-	ErrTargetUnhealthy = errors.New("target backend becomes unhealthy")
+	ErrCloseConnMgr = errors.New("failed to close connection manager")
 )
 
 const (
@@ -49,22 +43,14 @@ const (
 	sqlSetState      = "SET SESSION_STATES '%s'"
 	sessionStatesCol = "Session_states"
 	sessionTokenCol  = "Session_token"
-	currentDBKey     = "current-db"
 )
 
 type signalType int
 
 const (
-	signalTypeRedirect signalType = iota
-	signalTypeGracefulClose
+	signalTypeGracefulClose signalType = iota
 	signalTypeNums
 )
-
-type redirectResult struct {
-	err  error
-	from string
-	to   string
-}
 
 const (
 	statusActive      int32 = iota
@@ -110,8 +96,7 @@ func (cfg *BCConfig) check() {
 // The signal processing goroutine tries to migrate the session once it receives a signal.
 // If the session is not ready at that time, the cmd executing goroutine will try after executing commands.
 //
-// If redirection fails, it doesn't retry and waits for the next signal, because:
-// - If it disconnects immediately: it's even worse than graceful shutdown.
+// If it disconnects immediately: it's even worse than graceful shutdown.
 // - If it retries after each command: the latency will be unacceptable afterwards if it always fails.
 // - If it stops receiving signals: the previous new backend may be abnormal but the next new backend may be good.
 type BackendConnManager struct {
@@ -126,10 +111,6 @@ type BackendConnManager struct {
 	config         *BCConfig
 	logger         *zap.Logger
 	curBackend     router.BackendInst
-	// Redirect() sets it without lock. It will be set to nil after migration.
-	redirectInfo atomic.Pointer[router.BackendInst]
-	// redirectResCh is used to notify the event receiver asynchronously.
-	redirectResCh chan *redirectResult
 	// GracefulClose() sets it without lock.
 	closeStatus atomic.Int32
 	// The time when the connection was created.
@@ -137,9 +118,8 @@ type BackendConnManager struct {
 	// The last time when the backend is active.
 	lastActiveTime time.Time
 	// cancelFunc is used to cancel the signal processing goroutine.
-	cancelFunc context.CancelFunc
-	clientIO   pnet.PacketIO
-	// backendIO may be written during redirection and be read in ExecuteCmd/Redirect/setKeepalive.
+	cancelFunc       context.CancelFunc
+	clientIO         pnet.PacketIO
 	backendIO        atomic.Pointer[pnet.PacketIO]
 	backendTLS       *tls.Config
 	handshakeHandler HandshakeHandler
@@ -163,7 +143,6 @@ func NewBackendConnManager(logger *zap.Logger, handshakeHandler HandshakeHandler
 		authenticator:    NewAuthenticator(config),
 		// There are 2 types of signals, which may be sent concurrently.
 		signalReceived: make(chan signalType, signalTypeNums),
-		redirectResCh:  make(chan *redirectResult, 1),
 		quitSource:     SrcNone,
 	}
 	mgr.ctxmap.m = make(map[any]any)
@@ -171,13 +150,13 @@ func NewBackendConnManager(logger *zap.Logger, handshakeHandler HandshakeHandler
 	return mgr
 }
 
-// ConnectionID implements RedirectableConn.ConnectionID interface.
+// ConnectionID implements SimpleConn.ConnectionID interface.
 // It returns the ID of the frontend connection. The ID stays still after session migration.
 func (mgr *BackendConnManager) ConnectionID() uint64 {
 	return mgr.connectionID
 }
 
-// Connect connects to the first backend and then start watching redirection signals.
+// Connect connects to the first backend.
 func (mgr *BackendConnManager) Connect(ctx context.Context, clientIO pnet.PacketIO, frontendTLSConfig, backendTLSConfig *tls.Config, username, password string) error {
 	mgr.processLock.Lock()
 	defer mgr.processLock.Unlock()
@@ -307,7 +286,6 @@ func (mgr *BackendConnManager) getBackendIO(ctx context.Context, cctx ConnContex
 }
 
 // ExecuteCmd forwards messages between the client and the backend.
-// If it finds that the session is ready for redirection, it migrates the session.
 func (mgr *BackendConnManager) ExecuteCmd(ctx context.Context, request []byte) (err error) {
 	startTime := time.Now()
 	mgr.processLock.Lock()
@@ -343,10 +321,8 @@ func (mgr *BackendConnManager) ExecuteCmd(ctx context.Context, request []byte) (
 	if mgr.closeStatus.Load() >= statusClosing {
 		return
 	}
-	waitingRedirect := mgr.redirectInfo.Load() != nil
-	var holdRequest bool
 	backendIO := *mgr.backendIO.Load()
-	holdRequest, err = mgr.cmdProcessor.executeCmd(request, mgr.clientIO, backendIO, waitingRedirect)
+	err = mgr.cmdProcessor.executeCmd(request, mgr.clientIO, backendIO)
 	if err != nil {
 		if !pnet.IsMySQLError(err) {
 			return
@@ -381,20 +357,12 @@ func (mgr *BackendConnManager) ExecuteCmd(ctx context.Context, request []byte) (
 	if mgr.cmdProcessor.finishedTxn() {
 		if mgr.closeStatus.Load() == statusNotifyClose {
 			mgr.tryGracefulClose(ctx)
-		} else if waitingRedirect {
-			mgr.tryRedirect(ctx)
 		}
-	}
-	// Execute the held request no matter redirection succeeds or not.
-	if holdRequest && mgr.closeStatus.Load() < statusNotifyClose {
-		backendIO = *mgr.backendIO.Load()
-		_, err = mgr.cmdProcessor.executeCmd(request, mgr.clientIO, backendIO, false)
 	}
 	return
 }
 
-// SetEventReceiver implements RedirectableConn.SetEventReceiver interface.
-// The receiver sends redirection signals and watches redirecting events.
+// SetEventReceiver implements SimpleConn.SetEventReceiver interface.
 func (mgr *BackendConnManager) SetEventReceiver(receiver router.ConnEventReceiver) {
 	mgr.eventReceiver.Store(&receiver)
 }
@@ -407,31 +375,7 @@ func (mgr *BackendConnManager) getEventReceiver() router.ConnEventReceiver {
 	return *eventReceiver
 }
 
-func (mgr *BackendConnManager) initSessionStates(backendIO pnet.PacketIO, sessionStates string) error {
-	// Do not lock here because the caller already locks.
-	sessionStates = strings.ReplaceAll(sessionStates, "\\", "\\\\")
-	sessionStates = strings.ReplaceAll(sessionStates, "'", "\\'")
-	sql := fmt.Sprintf(sqlSetState, sessionStates)
-	_, _, err := mgr.cmdProcessor.query(backendIO, sql)
-	return err
-}
-
-func (mgr *BackendConnManager) querySessionStates(backendIO pnet.PacketIO) (sessionStates, sessionToken string, err error) {
-	// Do not lock here because the caller already locks.
-	var result *mysql.Resultset
-	if result, _, err = mgr.cmdProcessor.query(backendIO, sqlQueryState); err != nil {
-		return
-	}
-	if sessionStates, err = result.GetStringByName(0, sessionStatesCol); err != nil {
-		return
-	}
-	sessionToken, err = result.GetStringByName(0, sessionTokenCol)
-	return
-}
-
 // processSignals runs in a goroutine to:
-// - Receive redirection signals and then try to migrate the session.
-// - Send redirection results to the event receiver.
 // - Check if the backend is still alive.
 func (mgr *BackendConnManager) processSignals(ctx context.Context) {
 	checkBackendTicker := time.NewTicker(mgr.config.TickerInterval)
@@ -439,18 +383,13 @@ func (mgr *BackendConnManager) processSignals(ctx context.Context) {
 		select {
 		case s := <-mgr.signalReceived:
 			func() {
-				// Redirect the session immediately just in case the session is finishedTxn.
 				mgr.processLock.Lock()
 				defer mgr.processLock.Unlock()
 				switch s {
 				case signalTypeGracefulClose:
 					mgr.tryGracefulClose(ctx)
-				case signalTypeRedirect:
-					mgr.tryRedirect(ctx)
 				}
 			}()
-		case rs := <-mgr.redirectResCh:
-			mgr.notifyRedirectResult(ctx, rs)
 		case <-checkBackendTicker.C:
 			func() {
 				mgr.checkBackendActive()
@@ -462,136 +401,6 @@ func (mgr *BackendConnManager) processSignals(ctx context.Context) {
 			checkBackendTicker.Stop()
 			return
 		}
-	}
-}
-
-// tryRedirect tries to migrate the session if the session is redirect-able.
-// NOTE: processLock should be held before calling this function.
-func (mgr *BackendConnManager) tryRedirect(ctx context.Context) {
-	backendInst := mgr.redirectInfo.Load()
-	// No redirection signal or redirection is finished.
-	if backendInst == nil {
-		return
-	}
-	// Redirection will be retried after the next command finishes.
-	if !mgr.cmdProcessor.finishedTxn() {
-		return
-	}
-
-	rs := &redirectResult{
-		from: mgr.ServerAddr(),
-		to:   (*backendInst).Addr(),
-	}
-	defer func() {
-		// The `mgr` won't be notified again before it calls `OnRedirectSucceed`, so simply `StorePointer` is also fine.
-		mgr.redirectInfo.Store(nil)
-		// Notifying may block. Notify the receiver asynchronously to:
-		// - Reduce the latency of session migration
-		// - Avoid the risk of deadlock
-		mgr.redirectResCh <- rs
-	}()
-	// Even if the connection is closing, the redirection result must still be sent to recover the connection scores.
-	if mgr.closeStatus.Load() >= statusNotifyClose || ctx.Err() != nil {
-		return
-	}
-	// It may have been too long since the redirection signal was sent, and the target backend may be unhealthy now.
-	if !(*backendInst).Healthy() {
-		rs.err = ErrTargetUnhealthy
-		return
-	}
-	backendIO := *mgr.backendIO.Load()
-	var sessionStates, sessionToken string
-	if sessionStates, sessionToken, rs.err = mgr.querySessionStates(backendIO); rs.err != nil {
-		// If the backend connection is closed, also close the client connection.
-		// Otherwise, if the client is idle, the mgr will keep retrying.
-		if errors.Is(rs.err, net.ErrClosed) || pnet.IsDisconnectError(rs.err) || errors.Is(rs.err, os.ErrDeadlineExceeded) {
-			mgr.quitSource = SrcBackendNetwork
-			if ignoredErr := mgr.clientIO.GracefulClose(); ignoredErr != nil {
-				mgr.logger.Warn("graceful close client IO error", zap.Stringer("client_addr", mgr.clientIO.RemoteAddr()), zap.Error(ignoredErr))
-			}
-		}
-		return
-	}
-	if ctx.Err() != nil {
-		rs.err = ctx.Err()
-		return
-	}
-	if rs.err = mgr.updateAuthInfoFromSessionStates(hack.Slice(sessionStates)); rs.err != nil {
-		return
-	}
-
-	var cn net.Conn
-	cn, rs.err = net.DialTimeout("tcp", rs.to, DialTimeout)
-	if rs.err != nil {
-		mgr.handshakeHandler.OnHandshake(mgr, rs.to, rs.err, SrcBackendNetwork)
-		return
-	}
-	newBackendIO := pnet.PacketIO(pnet.NewPacketIO(cn, mgr.logger, mgr.config.ConnBufferSize, pnet.WithRemoteAddr(rs.to, cn.RemoteAddr()), pnet.WithWrapError(ErrBackendConn)))
-
-	if rs.err = mgr.authenticator.handshakeSecondTime(mgr.logger, mgr.clientIO, newBackendIO, mgr.backendTLS, sessionToken); rs.err == nil {
-		rs.err = mgr.initSessionStates(newBackendIO, sessionStates)
-	} else {
-		mgr.handshakeHandler.OnHandshake(mgr, newBackendIO.RemoteAddr().String(), rs.err, Error2Source(rs.err))
-	}
-	if rs.err != nil {
-		if ignoredErr := newBackendIO.Close(); ignoredErr != nil && !pnet.IsDisconnectError(ignoredErr) {
-			mgr.logger.Error("close new backend connection failed", zap.Error(ignoredErr))
-		}
-		return
-	}
-	if ignoredErr := backendIO.Close(); ignoredErr != nil && !pnet.IsDisconnectError(ignoredErr) {
-		mgr.logger.Error("close previous backend connection failed", zap.Error(ignoredErr))
-	}
-	mgr.backendIO.Store(&newBackendIO)
-	mgr.curBackend = *backendInst
-	mgr.setKeepAlive()
-	mgr.handshakeHandler.OnHandshake(mgr, mgr.ServerAddr(), nil, SrcNone)
-}
-
-// The original db in the auth info may be dropped during the session, so we need to authenticate with the current db.
-// The user may be renamed during the session, but the session cannot detect it, so this will affect the user.
-// TODO: this may be a security problem: a different new user may just be renamed to this user name.
-func (mgr *BackendConnManager) updateAuthInfoFromSessionStates(sessionStates []byte) error {
-	var statesMap map[string]any
-	if err := json.Unmarshal(sessionStates, &statesMap); err != nil {
-		return errors.Wrapf(err, "unmarshal session states error")
-	}
-	// The currentDBKey may be omitted if it's empty. In this case, we still need to update it.
-	if currentDB, ok := statesMap[currentDBKey].(string); ok {
-		mgr.authenticator.updateCurrentDB(currentDB)
-	}
-	return nil
-}
-
-// Redirect implements RedirectableConn.Redirect interface. It redirects the current session to the newAddr.
-// Note that the caller requires the function to be non-blocking.
-func (mgr *BackendConnManager) Redirect(backendInst router.BackendInst) bool {
-	// NOTE: BackendConnManager may be closing concurrently because of no lock.
-	if mgr.closeStatus.Load() >= statusNotifyClose {
-		return false
-	}
-	mgr.redirectInfo.Store(&backendInst)
-	// Generally, it won't wait because the caller won't send another signal before the previous one finishes.
-	mgr.signalReceived <- signalTypeRedirect
-	return true
-}
-
-func (mgr *BackendConnManager) notifyRedirectResult(ctx context.Context, rs *redirectResult) {
-	if rs == nil {
-		return
-	}
-	eventReceiver := mgr.getEventReceiver()
-	if eventReceiver == nil {
-		return
-	}
-	if rs.err != nil {
-		err := eventReceiver.OnRedirectFail(rs.from, rs.to, mgr)
-		mgr.logger.Warn("redirect connection failed", zap.String("from", rs.from),
-			zap.String("to", rs.to), zap.NamedError("redirect_err", rs.err), zap.NamedError("notify_err", err))
-	} else {
-		err := eventReceiver.OnRedirectSucceed(rs.from, rs.to, mgr)
-		mgr.logger.Debug("redirect connection succeeds", zap.String("from", rs.from),
-			zap.String("to", rs.to), zap.NamedError("notify_err", err))
 	}
 }
 
@@ -720,16 +529,8 @@ func (mgr *BackendConnManager) Close() error {
 	eventReceiver := mgr.getEventReceiver()
 	if eventReceiver != nil {
 		// Notify the receiver if there's any event.
-		if len(mgr.redirectResCh) > 0 {
-			mgr.notifyRedirectResult(context.Background(), <-mgr.redirectResCh)
-		}
-		// The connection may have just received the redirecting signal.
 		if len(addr) > 0 {
-			var redirectingAddr string
-			if redirectingBackend := mgr.redirectInfo.Load(); redirectingBackend != nil {
-				redirectingAddr = (*redirectingBackend).Addr()
-			}
-			if err := eventReceiver.OnConnClosed(addr, redirectingAddr, mgr); err != nil {
+			if err := eventReceiver.OnConnClosed(addr, mgr); err != nil {
 				mgr.logger.Error("close connection error", zap.String("backend_addr", addr), zap.NamedError("notify_err", err))
 			}
 		}

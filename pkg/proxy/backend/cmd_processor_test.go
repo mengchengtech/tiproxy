@@ -187,8 +187,7 @@ func TestDirectQuery(t *testing.T) {
 func TestPreparedStmts(t *testing.T) {
 	tc := newTCPConnSuite(t)
 	tests := []struct {
-		cfgs        []cfgOverrider
-		canRedirect bool
+		cfgs []cfgOverrider
 	}{
 		// prepare
 		{
@@ -198,7 +197,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypePrepareOK
 				},
 			},
-			canRedirect: true,
 		},
 		// send long data
 		{
@@ -209,7 +207,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeNone
 				},
 			},
-			canRedirect: false,
 		},
 		// send long data and execute
 		{
@@ -226,7 +223,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeResultSet
 				},
 			},
-			canRedirect: true,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -241,7 +237,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeOK
 				},
 			},
-			canRedirect: true,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -256,7 +251,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeErr
 				},
 			},
-			canRedirect: false,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -271,7 +265,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeOK
 				},
 			},
-			canRedirect: false,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -291,7 +284,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeOK
 				},
 			},
-			canRedirect: false,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -308,7 +300,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.status = pnet.ServerStatusCursorExists
 				},
 			},
-			canRedirect: false,
 		},
 		// execute and fetch
 		{
@@ -321,7 +312,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.status = pnet.ServerStatusCursorExists
 				},
 			},
-			canRedirect: false,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -339,7 +329,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.status = pnet.ServerStatusCursorExists
 				},
 			},
-			canRedirect: false,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -357,7 +346,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.status = pnet.ServerStatusLastRowSend
 				},
 			},
-			canRedirect: true,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -374,7 +362,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeErr
 				},
 			},
-			canRedirect: false,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -399,7 +386,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.status = pnet.ServerStatusLastRowSend
 				},
 			},
-			canRedirect: false,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -422,7 +408,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.status = pnet.ServerStatusLastRowSend
 				},
 			},
-			canRedirect: false,
 		},
 		// send long data and close/reset
 		{
@@ -438,7 +423,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeNone
 				},
 			},
-			canRedirect: true,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -453,7 +437,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeNone
 				},
 			},
-			canRedirect: false,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -468,7 +451,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeOK
 				},
 			},
-			canRedirect: true,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -483,7 +465,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeOK
 				},
 			},
-			canRedirect: false,
 		},
 		// execute and close/reset
 		{
@@ -501,7 +482,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeNone
 				},
 			},
-			canRedirect: true,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -518,7 +498,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeOK
 				},
 			},
-			canRedirect: true,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -535,7 +514,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeNone
 				},
 			},
-			canRedirect: false,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -552,7 +530,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeOK
 				},
 			},
-			canRedirect: false,
 		},
 		// reset connection and change user
 		{
@@ -574,7 +551,6 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeOK
 				},
 			},
-			canRedirect: true,
 		},
 		{
 			cfgs: []cfgOverrider{
@@ -595,325 +571,12 @@ func TestPreparedStmts(t *testing.T) {
 					cfg.backendConfig.respondType = responseTypeOK
 				},
 			},
-			canRedirect: true,
 		},
 	}
 
 	for _, test := range tests {
 		ts, clean := newTestSuite(t, tc)
-		c := func(t *testing.T, ts *testSuite) {
-			require.Equal(t, test.canRedirect, ts.mp.cmdProcessor.finishedTxn())
-		}
-		ts.executeMultiCmd(t, test.cfgs, c)
-		clean()
-	}
-}
-
-// Test whether the session is redirect-able when it has an active transaction.
-func TestTxnStatus(t *testing.T) {
-	tc := newTCPConnSuite(t)
-	tests := []struct {
-		cfgs        []cfgOverrider
-		canRedirect bool
-	}{
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit | pnet.ServerStatusInTrans
-				},
-			},
-			canRedirect: false,
-		},
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusInTrans
-				},
-			},
-			canRedirect: false,
-		},
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusInTrans
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = 0
-				},
-			},
-			canRedirect: true,
-		},
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit | pnet.ServerStatusInTrans
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit
-				},
-			},
-			canRedirect: true,
-		},
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusInTrans
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComChangeUser
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit
-				},
-			},
-			canRedirect: true,
-		},
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusInTrans
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComResetConnection
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit
-				},
-			},
-			canRedirect: true,
-		},
-	}
-
-	for _, test := range tests {
-		ts, clean := newTestSuite(t, tc)
-		c := func(t *testing.T, ts *testSuite) {
-			require.Equal(t, test.canRedirect, ts.mp.cmdProcessor.finishedTxn())
-		}
-		ts.executeMultiCmd(t, test.cfgs, c)
-		clean()
-	}
-}
-
-// Test whether the session is redirect-able for mixed prepared statement status and txn status.
-func TestMixPrepAndTxnStatus(t *testing.T) {
-	tc := newTCPConnSuite(t)
-	tests := []struct {
-		cfgs        []cfgOverrider
-		canRedirect bool
-	}{
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusInTrans
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtExecute
-					cfg.clientConfig.prepStmtID = 1
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusInTrans
-				},
-			},
-			canRedirect: false,
-		},
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtExecute
-					cfg.clientConfig.prepStmtID = 1
-					cfg.backendConfig.columns = 1
-					cfg.backendConfig.respondType = responseTypeResultSet
-					cfg.backendConfig.status = pnet.ServerStatusInTrans | pnet.ServerStatusCursorExists
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtFetch
-					cfg.clientConfig.prepStmtID = 1
-					cfg.backendConfig.respondType = responseTypeRow
-					cfg.backendConfig.status = pnet.ServerStatusInTrans | pnet.ServerStatusLastRowSend
-				},
-			},
-			canRedirect: false,
-		},
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtExecute
-					cfg.clientConfig.prepStmtID = 1
-					cfg.backendConfig.columns = 1
-					cfg.backendConfig.respondType = responseTypeResultSet
-					cfg.backendConfig.status = pnet.ServerStatusInTrans | pnet.ServerStatusCursorExists
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.columns = 1
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = 0
-				},
-			},
-			canRedirect: false,
-		},
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtExecute
-					cfg.clientConfig.prepStmtID = 1
-					cfg.backendConfig.columns = 1
-					cfg.backendConfig.respondType = responseTypeResultSet
-					cfg.backendConfig.status = pnet.ServerStatusInTrans | pnet.ServerStatusCursorExists
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComResetConnection
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit
-				},
-			},
-			canRedirect: true,
-		},
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtExecute
-					cfg.clientConfig.prepStmtID = 1
-					cfg.backendConfig.columns = 1
-					cfg.backendConfig.respondType = responseTypeResultSet
-					cfg.backendConfig.status = pnet.ServerStatusInTrans | pnet.ServerStatusCursorExists
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtFetch
-					cfg.clientConfig.prepStmtID = 1
-					cfg.backendConfig.respondType = responseTypeRow
-					cfg.backendConfig.status = pnet.ServerStatusInTrans | pnet.ServerStatusLastRowSend
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtExecute
-					cfg.clientConfig.prepStmtID = 2
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = 0
-				},
-			},
-			canRedirect: true,
-		},
-	}
-
-	for _, test := range tests {
-		ts, clean := newTestSuite(t, tc)
-		c := func(t *testing.T, ts *testSuite) {
-			require.Equal(t, test.canRedirect, ts.mp.cmdProcessor.finishedTxn())
-		}
-		ts.executeMultiCmd(t, test.cfgs, c)
-		clean()
-	}
-}
-
-// Test that the BEGIN statement will be held when the session is waiting for redirection.
-func TestHoldRequest(t *testing.T) {
-	tc := newTCPConnSuite(t)
-	tests := []struct {
-		cfgs        []cfgOverrider
-		holdRequest bool
-	}{
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit | pnet.ServerStatusInTrans
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.clientConfig.sql = "begin"
-					cfg.proxyConfig.waitRedirect = true
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit
-					cfg.backendConfig.loops = 2
-				},
-			},
-			holdRequest: true,
-		},
-		// not BEGIN
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit | pnet.ServerStatusInTrans
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.clientConfig.sql = "commit"
-					cfg.proxyConfig.waitRedirect = true
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit
-				},
-			},
-			holdRequest: false,
-		},
-		// not COM_QUERY
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit | pnet.ServerStatusInTrans
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtExecute
-					cfg.clientConfig.prepStmtID = 1
-					cfg.backendConfig.columns = 1
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit
-				},
-			},
-			holdRequest: false,
-		},
-		// cursor exists
-		{
-			cfgs: []cfgOverrider{
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit | pnet.ServerStatusInTrans
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComStmtExecute
-					cfg.clientConfig.prepStmtID = 1
-					cfg.backendConfig.columns = 1
-					cfg.backendConfig.respondType = responseTypeResultSet
-					cfg.backendConfig.status = pnet.ServerStatusCursorExists
-				},
-				func(cfg *testConfig) {
-					cfg.clientConfig.cmd = pnet.ComQuery
-					cfg.clientConfig.sql = "begin"
-					cfg.proxyConfig.waitRedirect = true
-					cfg.backendConfig.respondType = responseTypeOK
-					cfg.backendConfig.status = pnet.ServerStatusAutocommit | pnet.ServerStatusInTrans
-				},
-			},
-			holdRequest: false,
-		},
-	}
-
-	for _, test := range tests {
-		ts, clean := newTestSuite(t, tc)
-		c := func(t *testing.T, ts *testSuite) {
-			require.Equal(t, test.holdRequest, ts.mp.holdRequest)
-		}
-		ts.executeMultiCmd(t, test.cfgs, c)
+		ts.executeMultiCmd(t, test.cfgs)
 		clean()
 	}
 }

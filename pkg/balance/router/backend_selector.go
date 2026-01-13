@@ -7,7 +7,7 @@ type BackendSelector struct {
 	excluded  []BackendInst
 	cur       BackendInst
 	routeOnce func(excluded []BackendInst) (BackendInst, error)
-	onCreate  func(backend BackendInst, conn RedirectableConn, succeed bool)
+	onCreate  func(backend BackendInst, conn SimpleConn, succeed bool)
 }
 
 func (bs *BackendSelector) Next() (BackendInst, error) {
@@ -25,6 +25,6 @@ func (bs *BackendSelector) Next() (BackendInst, error) {
 	return backend, nil
 }
 
-func (bs *BackendSelector) Finish(conn RedirectableConn, succeed bool) {
+func (bs *BackendSelector) Finish(conn SimpleConn, succeed bool) {
 	bs.onCreate(bs.cur, conn, succeed)
 }

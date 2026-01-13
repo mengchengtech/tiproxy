@@ -37,7 +37,7 @@ func (r *StaticRouter) GetBackendSelector() BackendSelector {
 			}
 			return nil, ErrNoBackend
 		},
-		onCreate: func(backend BackendInst, conn RedirectableConn, succeed bool) {
+		onCreate: func(backend BackendInst, conn SimpleConn, succeed bool) {
 			if succeed {
 				r.cnt++
 			}
@@ -51,10 +51,6 @@ func (r *StaticRouter) HealthyBackendCount() int {
 
 func (r *StaticRouter) RefreshBackend() {}
 
-func (r *StaticRouter) RedirectConnections() error {
-	return nil
-}
-
 func (r *StaticRouter) ConnCount() int {
 	return r.cnt
 }
@@ -62,15 +58,7 @@ func (r *StaticRouter) ConnCount() int {
 func (r *StaticRouter) Close() {
 }
 
-func (r *StaticRouter) OnRedirectSucceed(from, to string, conn RedirectableConn) error {
-	return nil
-}
-
-func (r *StaticRouter) OnRedirectFail(from, to string, conn RedirectableConn) error {
-	return nil
-}
-
-func (r *StaticRouter) OnConnClosed(addr, redirectingAddr string, conn RedirectableConn) error {
+func (r *StaticRouter) OnConnClosed(addr string, conn SimpleConn) error {
 	r.cnt--
 	return nil
 }

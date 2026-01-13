@@ -5,7 +5,6 @@ package router
 
 import (
 	"sync"
-	"time"
 
 	glist "github.com/bahlo/generic-list-go"
 	"github.com/mengchengtech/cerberus/lib/util/errors"
@@ -19,9 +18,7 @@ var (
 
 // ConnEventReceiver receives connection events.
 type ConnEventReceiver interface {
-	OnRedirectSucceed(from, to string, conn RedirectableConn) error
-	OnRedirectFail(from, to string, conn RedirectableConn) error
-	OnConnClosed(addr, redirectingAddr string, conn RedirectableConn) error
+	OnConnClosed(addr string, conn SimpleConn) error
 }
 
 // Router routes client connections to backends.
@@ -32,46 +29,20 @@ type Router interface {
 	GetBackendSelector() BackendSelector
 	HealthyBackendCount() int
 	RefreshBackend()
-	RedirectConnections() error
 	ConnCount() int
 	Close()
 }
 
-type connPhase int
-
-const (
-	// The session is never redirected.
-	phaseNotRedirected connPhase = iota
-	// The session is redirecting.
-	phaseRedirectNotify
-	// The session redirected successfully last time.
-	phaseRedirectEnd
-	// The session failed to redirect last time.
-	phaseRedirectFail
-	// The connection is closed.
-	phaseClosed
-)
-
-const (
-	// The interval to rebalance connections.
-	rebalanceInterval = 10 * time.Millisecond
-	// After a connection fails to redirect, it may contain some unmigratable status.
-	// Limit its redirection interval to avoid unnecessary retrial to reduce latency jitter.
-	redirectFailMinInterval = 3 * time.Second
-)
-
-// RedirectableConn indicates a redirect-able connection.
-type RedirectableConn interface {
+// SimpleConn indicates a simple connection.
+type SimpleConn interface {
 	SetEventReceiver(receiver ConnEventReceiver)
 	SetValue(key, val any)
 	Value(key any) any
-	// Redirect returns false if the current conn is not redirectable.
-	Redirect(backend BackendInst) bool
 	ConnectionID() uint64
 	ConnInfo() []zap.Field
 }
 
-// BackendInst defines a backend that a connection is redirecting to.
+// BackendInst defines a backend refer a connection
 type BackendInst interface {
 	Addr() string
 	Healthy() bool
@@ -87,15 +58,15 @@ type backendWrapper struct {
 	// connScore is used for calculating backend scores and check if the backend can be removed from the list.
 	// connScore = connList.Len() + incoming connections - outgoing connections.
 	connScore int
-	// A list of *connWrapper and is ordered by the connecting or redirecting time.
+	// A list of SimpleConn and is ordered by the connecting time.
 	// connList only includes the connections that are currently on this backend.
-	connList *glist.List[*connWrapper]
+	connList *glist.List[SimpleConn]
 }
 
 func newBackendWrapper(addr string, health observer.BackendHealth) *backendWrapper {
 	wrapper := &backendWrapper{
 		addr:     addr,
-		connList: glist.New[*connWrapper](),
+		connList: glist.New[SimpleConn](),
 	}
 	wrapper.setHealth(health)
 	return wrapper
@@ -152,14 +123,4 @@ func (b *backendWrapper) String() string {
 	str := b.mu.String()
 	b.mu.RUnlock()
 	return str
-}
-
-// connWrapper wraps RedirectableConn.
-type connWrapper struct {
-	RedirectableConn
-	// The reason why the redirection happens.
-	redirectReason string
-	// Last redirect start time of this connection.
-	lastRedirect time.Time
-	phase        connPhase
 }

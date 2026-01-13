@@ -5,7 +5,6 @@ package router
 
 import (
 	"context"
-	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -13,101 +12,52 @@ import (
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
 	"github.com/mengchengtech/cerberus/pkg/balance/policy"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-type mockRedirectableConn struct {
+type mockSimpleConn struct {
 	sync.Mutex
 	t        *testing.T
 	kv       map[any]any
 	connID   uint64
-	from     BackendInst
-	to       BackendInst
+	backend  BackendInst
 	receiver ConnEventReceiver
-	closing  bool
 }
 
-func newMockRedirectableConn(t *testing.T, id uint64) *mockRedirectableConn {
-	return &mockRedirectableConn{
+func newMockSimpleConn(t *testing.T, id uint64) *mockSimpleConn {
+	return &mockSimpleConn{
 		t:      t,
 		connID: id,
 		kv:     make(map[any]any),
 	}
 }
 
-func (conn *mockRedirectableConn) SetEventReceiver(receiver ConnEventReceiver) {
+func (conn *mockSimpleConn) SetEventReceiver(receiver ConnEventReceiver) {
 	conn.Lock()
 	conn.receiver = receiver
 	conn.Unlock()
 }
 
-func (conn *mockRedirectableConn) SetValue(k, v any) {
+func (conn *mockSimpleConn) SetValue(k, v any) {
 	conn.Lock()
 	conn.kv[k] = v
 	conn.Unlock()
 }
 
-func (conn *mockRedirectableConn) Value(k any) any {
+func (conn *mockSimpleConn) Value(k any) any {
 	conn.Lock()
 	v := conn.kv[k]
 	conn.Unlock()
 	return v
 }
 
-func (conn *mockRedirectableConn) Redirect(inst BackendInst) bool {
-	conn.Lock()
-	defer conn.Unlock()
-	if conn.closing {
-		return false
-	}
-	require.Nil(conn.t, conn.to)
-	require.True(conn.t, inst.Healthy())
-	conn.to = inst
-	return true
-}
-
-func (conn *mockRedirectableConn) GetRedirectingAddr() string {
-	conn.Lock()
-	defer conn.Unlock()
-	if conn.to == nil {
-		return ""
-	}
-	return conn.to.Addr()
-}
-
-func (conn *mockRedirectableConn) ConnectionID() uint64 {
+func (conn *mockSimpleConn) ConnectionID() uint64 {
 	return conn.connID
 }
 
-func (conn *mockRedirectableConn) ConnInfo() []zap.Field {
+func (conn *mockSimpleConn) ConnInfo() []zap.Field {
 	return nil
-}
-
-func (conn *mockRedirectableConn) getAddr() (string, string) {
-	conn.Lock()
-	defer conn.Unlock()
-	var to string
-	if conn.to != nil && !reflect.ValueOf(conn.to).IsNil() {
-		to = conn.to.Addr()
-	}
-	return conn.from.Addr(), to
-}
-
-func (conn *mockRedirectableConn) redirectSucceed() {
-	conn.Lock()
-	require.True(conn.t, conn.to != nil && !reflect.ValueOf(conn.to).IsNil())
-	conn.from = conn.to
-	conn.to = nil
-	conn.Unlock()
-}
-
-func (conn *mockRedirectableConn) redirectFail() {
-	conn.Lock()
-	require.True(conn.t, conn.to != nil && !reflect.ValueOf(conn.to).IsNil())
-	conn.to = nil
-	conn.Unlock()
 }
 
 type mockBackendObserver struct {
@@ -122,13 +72,6 @@ func newMockBackendObserver() *mockBackendObserver {
 		healths:     make(map[string]*observer.BackendHealth),
 		subscribers: make(map[string]chan observer.HealthResult),
 	}
-}
-
-func (mbo *mockBackendObserver) toggleBackendHealth(addr string) {
-	mbo.healthLock.Lock()
-	defer mbo.healthLock.Unlock()
-	health := mbo.healths[addr]
-	health.Healthy = !health.Healthy
 }
 
 func (mbo *mockBackendObserver) addBackend(addr string) {

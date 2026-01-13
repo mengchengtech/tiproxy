@@ -223,14 +223,10 @@ func (ts *testSuite) executeCmd(t *testing.T, c checker) {
 }
 
 // Execute multiple commands at once to reuse the same ComProcessor.
-func (ts *testSuite) executeMultiCmd(t *testing.T, cfgs []cfgOverrider, c checker) {
+func (ts *testSuite) executeMultiCmd(t *testing.T, cfgs []cfgOverrider) {
 	for _, cfg := range cfgs {
 		ts.setConfig(cfg)
 		ts.runAndCheck(t, nil, ts.mc.request, ts.mb.respond, ts.mp.processCmd)
-	}
-	// Only check it at last.
-	if c != nil {
-		c(t, ts)
 	}
 }
 

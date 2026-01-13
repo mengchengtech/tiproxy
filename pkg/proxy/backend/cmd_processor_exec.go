@@ -11,33 +11,13 @@ import (
 	"github.com/mengchengtech/cerberus/lib/util/errors"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
 	"github.com/pingcap/tidb/parser"
-	"github.com/siddontang/go/hack"
 	"go.uber.org/zap"
 )
 
 // executeCmd forwards requests and responses between the client and the backend.
-// holdRequest: should the proxy send the request to the new backend.
 // err: unexpected errors or MySQL errors.
-func (cp *CmdProcessor) executeCmd(request []byte, clientIO, backendIO pnet.PacketIO, waitingRedirect bool) (holdRequest bool, err error) {
+func (cp *CmdProcessor) executeCmd(request []byte, clientIO, backendIO pnet.PacketIO) (err error) {
 	backendIO.ResetSequence()
-	if waitingRedirect && cp.needHoldRequest(request) {
-		var response []byte
-		if _, response, err = cp.query(backendIO, "COMMIT"); err != nil {
-			// If commit fails, forward the response to the client.
-			if pnet.IsMySQLError(err) {
-				if writeErr := clientIO.WritePacket(response, true); writeErr != nil {
-					return false, writeErr
-				}
-			}
-			// commit txn fails; read packet fails; write packet fails.
-			return false, err
-		}
-		return true, err
-	}
-	return false, cp.forwardCommand(clientIO, backendIO, request)
-}
-
-func (cp *CmdProcessor) forwardCommand(clientIO, backendIO pnet.PacketIO, request []byte) error {
 	cmd := pnet.Command(request[0])
 	// ComChangeUser is special: we need to modify the packet before forwarding.
 	if cmd != pnet.ComChangeUser {
@@ -335,33 +315,6 @@ func (cp *CmdProcessor) forwardQuitCmd() error {
 	// No returning, just disconnect.
 	cp.serverStatus |= StatusQuit
 	return nil
-}
-
-// When the following conditions are matched, we can hold the command after redirecting:
-// - The proxy has received a redirect signal.
-// - The session is in a transaction and waits for it to finish.
-// - The incoming statement is `BEGIN` or `START TRANSACTION`, which commits the current transaction implicitly.
-// The application may always omit `COMMIT` and thus the session can never be redirected.
-// We can send a `COMMIT` statement to the current backend and then forward the `BEGIN` statement to the new backend.
-func (cp *CmdProcessor) needHoldRequest(request []byte) bool {
-	cmd, data := pnet.Command(request[0]), request[1:]
-	// BEGIN/START TRANSACTION statements cannot be prepared.
-	if cmd != pnet.ComQuery {
-		return false
-	}
-	// Hold request only when it's waiting for the end of the transaction.
-	if cp.serverStatus&StatusInTrans == 0 {
-		return false
-	}
-	// Opening result sets can still be fetched after COMMIT/ROLLBACK, so don't hold.
-	if cp.hasPendingPreparedStmts() {
-		return false
-	}
-	if len(data) > 0 && data[len(data)-1] == 0 {
-		data = data[:len(data)-1]
-	}
-	query := hack.String(data)
-	return isBeginStmt(query)
 }
 
 func isBeginStmt(query string) bool {

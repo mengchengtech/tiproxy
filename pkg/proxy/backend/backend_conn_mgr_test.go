@@ -9,7 +9,6 @@ import (
 	"net"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -29,7 +28,7 @@ const (
 )
 
 type event struct {
-	from, to  string
+	addr      string
 	eventName int
 }
 
@@ -43,28 +42,9 @@ func newMockEventReceiver() *mockEventReceiver {
 	}
 }
 
-func (mer *mockEventReceiver) OnRedirectSucceed(from, to string, conn router.RedirectableConn) error {
+func (mer *mockEventReceiver) OnConnClosed(addr string, conn router.SimpleConn) error {
 	mer.eventCh <- event{
-		from:      from,
-		to:        to,
-		eventName: eventSucceed,
-	}
-	return nil
-}
-
-func (mer *mockEventReceiver) OnRedirectFail(from, to string, conn router.RedirectableConn) error {
-	mer.eventCh <- event{
-		from:      from,
-		to:        to,
-		eventName: eventFail,
-	}
-	return nil
-}
-
-func (mer *mockEventReceiver) OnConnClosed(from, to string, conn router.RedirectableConn) error {
-	mer.eventCh <- event{
-		from:      from,
-		to:        to,
+		addr:      addr,
 		eventName: eventClose,
 	}
 	return nil
@@ -74,41 +54,6 @@ func (mer *mockEventReceiver) checkEvent(t *testing.T, eventName int) event {
 	e := <-mer.eventCh
 	require.Equal(t, eventName, e.eventName)
 	return e
-}
-
-type mockBackendInst struct {
-	addr    string
-	healthy atomic.Bool
-	local   atomic.Bool
-}
-
-func newMockBackendInst(ts *backendMgrTester) *mockBackendInst {
-	mbi := &mockBackendInst{
-		addr: ts.tc.backendListener.Addr().String(),
-	}
-	mbi.setHealthy(true)
-	mbi.setLocal(true)
-	return mbi
-}
-
-func (mbi *mockBackendInst) Addr() string {
-	return mbi.addr
-}
-
-func (mbi *mockBackendInst) Healthy() bool {
-	return mbi.healthy.Load()
-}
-
-func (mbi *mockBackendInst) setHealthy(healthy bool) {
-	mbi.healthy.Store(healthy)
-}
-
-func (mbi *mockBackendInst) Local() bool {
-	return mbi.local.Load()
-}
-
-func (mbi *mockBackendInst) setLocal(local bool) {
-	mbi.local.Store(local)
 }
 
 type runner struct {
@@ -168,31 +113,6 @@ func (ts *backendMgrTester) handshake4Backend(packetIO pnet.PacketIO) error {
 	return ts.mb.authenticate(ts.tc.backendIO)
 }
 
-func (ts *backendMgrTester) redirectSucceed4Backend(packetIO pnet.PacketIO) error {
-	// respond to `SHOW SESSION STATES`
-	ts.mb.respondType = responseTypeResultSet
-	err := ts.mb.respond(packetIO)
-	require.NoError(ts.t, err)
-	err = ts.handshake4Backend(ts.tc.backendIO)
-	require.NoError(ts.t, err)
-	// respond to `SET SESSION STATES`
-	err = ts.respondWithNoTxn4Backend(ts.tc.backendIO)
-	require.NoError(ts.t, err)
-	// previous connection is closed
-	_, err = packetIO.ReadPacket()
-	require.True(ts.t, pnet.IsDisconnectError(err))
-	return nil
-}
-
-func (ts *backendMgrTester) redirectSucceed4Proxy(_, _ pnet.PacketIO) error {
-	backend1 := ts.mp.backendIO.Load()
-	ts.mp.Redirect(newMockBackendInst(ts))
-	ts.mp.getEventReceiver().(*mockEventReceiver).checkEvent(ts.t, eventSucceed)
-	require.NotEqual(ts.t, backend1, ts.mp.backendIO.Load())
-	require.Equal(ts.t, SrcNone, ts.mp.QuitSource())
-	return nil
-}
-
 func (ts *backendMgrTester) forwardCmd4Proxy(clientIO, backendIO pnet.PacketIO) error {
 	clientIO.ResetSequence()
 	request, err := clientIO.ReadPacket()
@@ -216,37 +136,6 @@ func (ts *backendMgrTester) startTxn4Backend(packetIO pnet.PacketIO) error {
 	return ts.mb.respond(packetIO)
 }
 
-func (ts *backendMgrTester) checkNotRedirected4Proxy(clientIO, backendIO pnet.PacketIO) error {
-	redirInfo := ts.mp.redirectInfo.Load()
-	require.Nil(ts.t, redirInfo)
-	backend1 := ts.mp.backendIO.Load()
-	// There is no other way to verify it's not redirected.
-	// The buffer size of channel signalReceived is 0, so after the second redirect signal is sent,
-	// we can ensure that the first signal is already processed.
-	ts.mp.Redirect(newMockBackendInst(ts))
-	ts.mp.signalReceived <- signalTypeRedirect
-	// The backend connection is still the same.
-	require.Equal(ts.t, backend1, ts.mp.backendIO.Load())
-	return nil
-}
-
-func (ts *backendMgrTester) redirectAfterCmd4Proxy(clientIO, backendIO pnet.PacketIO) error {
-	backend1 := ts.mp.backendIO.Load()
-	err := ts.forwardCmd4Proxy(clientIO, backendIO)
-	require.NoError(ts.t, err)
-	ts.mp.getEventReceiver().(*mockEventReceiver).checkEvent(ts.t, eventSucceed)
-	require.NotEqual(ts.t, backend1, ts.mp.backendIO.Load())
-	return nil
-}
-
-func (ts *backendMgrTester) redirectFail4Proxy(clientIO, backendIO pnet.PacketIO) error {
-	backend1 := ts.mp.backendIO.Load()
-	ts.mp.Redirect(newMockBackendInst(ts))
-	ts.mp.getEventReceiver().(*mockEventReceiver).checkEvent(ts.t, eventFail)
-	require.Equal(ts.t, backend1, ts.mp.backendIO.Load())
-	return nil
-}
-
 func (ts *backendMgrTester) checkConnClosed4Proxy(_, _ pnet.PacketIO) error {
 	require.Eventually(ts.t, func() bool {
 		switch ts.mp.closeStatus.Load() {
@@ -264,169 +153,6 @@ func (ts *backendMgrTester) runTests(runners []runner) {
 		require.Equal(ts.t, ts.tc.clientIO.InBytes(), ts.mp.ClientOutBytes())
 		require.Equal(ts.t, ts.tc.clientIO.OutBytes(), ts.mp.ClientInBytes())
 	}
-}
-
-// Test that redirection succeeds immediately if the session is redirect-able.
-func TestNormalRedirect(t *testing.T) {
-	ts := newBackendMgrTester(t)
-	runners := []runner{
-		// 1st handshake
-		{
-			client:  ts.mc.authenticate,
-			proxy:   ts.firstHandshake4Proxy,
-			backend: ts.handshake4Backend,
-		},
-		// 2nd handshake: redirect immediately after connection
-		{
-			client:  nil,
-			proxy:   ts.redirectSucceed4Proxy,
-			backend: ts.redirectSucceed4Backend,
-		},
-	}
-	ts.runTests(runners)
-}
-
-// Test redirection when the session has a transaction.
-func TestRedirectInTxn(t *testing.T) {
-	ts := newBackendMgrTester(t)
-	runners := []runner{
-		// 1st handshake
-		{
-			client:  ts.mc.authenticate,
-			proxy:   ts.firstHandshake4Proxy,
-			backend: ts.handshake4Backend,
-		},
-		// start a transaction to make it unredirect-able
-		{
-			client:  ts.mc.request,
-			proxy:   ts.forwardCmd4Proxy,
-			backend: ts.startTxn4Backend,
-		},
-		// try to redirect but it doesn't redirect
-		{
-			proxy: ts.checkNotRedirected4Proxy,
-		},
-		// finish the transaction and it will then automatically redirect
-		{
-			client: ts.mc.request,
-			proxy:  ts.redirectAfterCmd4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				// respond to the client request
-				err := ts.respondWithNoTxn4Backend(packetIO)
-				require.NoError(t, err)
-				return ts.redirectSucceed4Backend(packetIO)
-			},
-		},
-		// start a transaction to make it unredirect-able
-		{
-			client:  ts.mc.request,
-			proxy:   ts.forwardCmd4Proxy,
-			backend: ts.startTxn4Backend,
-		},
-		// try to redirect but it doesn't redirect
-		{
-			proxy: ts.checkNotRedirected4Proxy,
-		},
-		// hold the request and then make it redirect-able
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.sql = "begin"
-				return ts.mc.request(packetIO)
-			},
-			proxy: ts.redirectAfterCmd4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				// respond to internal COMMIT
-				err := ts.respondWithNoTxn4Backend(packetIO)
-				require.NoError(t, err)
-				// redirect
-				err = ts.redirectSucceed4Backend(packetIO)
-				require.NoError(t, err)
-				// respond to `begin`
-				return ts.startTxn4Backend(ts.tc.backendIO)
-			},
-		},
-		// start a transaction to make it unredirect-able
-		{
-			client:  ts.mc.request,
-			proxy:   ts.forwardCmd4Proxy,
-			backend: ts.startTxn4Backend,
-		},
-		// try to redirect but it doesn't redirect
-		{
-			proxy: ts.checkNotRedirected4Proxy,
-		},
-		// CHANGE_USER clears the txn
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.cmd = pnet.ComChangeUser
-				return ts.mc.request(packetIO)
-			},
-			proxy: ts.redirectAfterCmd4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				// respond to the client request
-				err := ts.respondWithNoTxn4Backend(packetIO)
-				require.NoError(t, err)
-				return ts.redirectSucceed4Backend(packetIO)
-			},
-		},
-		// start a transaction to make it unredirect-able
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.cmd = pnet.ComQuery
-				return ts.mc.request(packetIO)
-			},
-			proxy:   ts.forwardCmd4Proxy,
-			backend: ts.startTxn4Backend,
-		},
-		// try to redirect but it doesn't redirect
-		{
-			proxy: ts.checkNotRedirected4Proxy,
-		},
-		// internal COMMIT fails and the `begin` is not sent
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.sql = "begin"
-				return ts.mc.request(packetIO)
-			},
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				return ts.forwardCmd4Proxy(clientIO, backendIO)
-			},
-			backend: func(packetIO pnet.PacketIO) error {
-				// respond to internal COMMIT
-				ts.mb.respondType = responseTypeErr
-				return ts.mb.respond(packetIO)
-			},
-		},
-		// show session states fails and the `begin` is sent to the old backend
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.sql = "begin"
-				return ts.mc.request(packetIO)
-			},
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				backend1 := ts.mp.backendIO.Load()
-				err := ts.forwardCmd4Proxy(clientIO, backendIO)
-				require.NoError(t, err)
-				ts.mp.getEventReceiver().(*mockEventReceiver).checkEvent(t, eventFail)
-				require.Equal(t, backend1, ts.mp.backendIO.Load())
-				require.Equal(t, SrcNone, ts.mp.QuitSource())
-				return nil
-			},
-			backend: func(packetIO pnet.PacketIO) error {
-				// respond to internal COMMIT
-				err := ts.respondWithNoTxn4Backend(packetIO)
-				require.NoError(t, err)
-				// respond to `SHOW SESSION_STATES`
-				ts.mb.respondType = responseTypeErr
-				err = ts.mb.respond(packetIO)
-				require.NoError(t, err)
-				// respond to `begin`
-				return ts.startTxn4Backend(packetIO)
-			},
-		},
-	}
-
-	ts.runTests(runners)
 }
 
 // Test that the client handshake fails.
@@ -450,74 +176,6 @@ func TestConnectFail(t *testing.T) {
 			proxy: func(clientIO, backendIO pnet.PacketIO) error {
 				require.Equal(t, SrcClientAuthFail, ts.mp.QuitSource())
 				return nil
-			},
-		},
-	}
-	ts.runTests(runners)
-}
-
-// Test that the proxy works fine when redirection fails.
-func TestRedirectFail(t *testing.T) {
-	ts := newBackendMgrTester(t)
-	runners := []runner{
-		// 1st handshake
-		{
-			client:  ts.mc.authenticate,
-			proxy:   ts.firstHandshake4Proxy,
-			backend: ts.handshake4Backend,
-		},
-		// show session states fails
-		{
-			proxy: ts.redirectFail4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				// respond to `SHOW SESSION_STATES`
-				ts.mb.respondType = responseTypeErr
-				return ts.mb.respond(packetIO)
-			},
-		},
-		// 2nd handshake fails
-		{
-			proxy: ts.redirectFail4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				// respond to `SHOW SESSION_STATES`
-				ts.mb.respondType = responseTypeResultSet
-				err := ts.mb.respondOnce(packetIO)
-				require.NoError(t, err)
-				conn, err := ts.tc.backendListener.Accept()
-				require.NoError(t, err)
-				tmpBackendIO := pnet.NewPacketIO(conn, ts.lg, pnet.DefaultConnBufferSize)
-				// auth fails
-				ts.mb.authSucceed = false
-				err = ts.mb.authenticate(tmpBackendIO)
-				require.NoError(t, err)
-				// the new connection is closed
-				_, err = tmpBackendIO.ReadPacket()
-				require.True(ts.t, pnet.IsDisconnectError(err))
-				return tmpBackendIO.Close()
-			},
-		},
-		// set session states fails
-		{
-			proxy: ts.redirectFail4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				// respond to `SHOW SESSION STATES`
-				ts.mb.respondType = responseTypeResultSet
-				err := ts.mb.respond(packetIO)
-				require.NoError(ts.t, err)
-				conn, err := ts.tc.backendListener.Accept()
-				require.NoError(ts.t, err)
-				tmpBackendIO := pnet.NewPacketIO(conn, ts.lg, pnet.DefaultConnBufferSize)
-				ts.mb.authSucceed = true
-				err = ts.mb.authenticate(tmpBackendIO)
-				require.NoError(t, err)
-				// respond to `SET SESSION STATES`
-				ts.mb.respondType = responseTypeErr
-				err = ts.mb.respond(tmpBackendIO)
-				require.NoError(t, err)
-				// the new connection is closed
-				_, err = tmpBackendIO.ReadPacket()
-				require.True(ts.t, pnet.IsDisconnectError(err))
-				return tmpBackendIO.Close()
 			},
 		},
 	}
@@ -554,60 +212,6 @@ func TestSpecialCmds(t *testing.T) {
 			},
 			proxy:   ts.forwardCmd4Proxy,
 			backend: ts.respondWithNoTxn4Backend,
-		},
-		// 2nd handshake
-		{
-			client: nil,
-			proxy:  ts.redirectSucceed4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				ts.mb.sessionStates = "{\"current-db\":\"session_db\"}"
-				require.NoError(t, ts.redirectSucceed4Backend(packetIO))
-				require.Equal(t, "another_user", ts.mb.username)
-				require.Equal(t, "session_db", ts.mb.db)
-				expectCap := ts.mp.handshakeHandler.GetCapability() & defaultTestClientCapability &^ (pnet.ClientMultiStatements | pnet.ClientPluginAuthLenencClientData)
-				gotCap := ts.mb.capability &^ pnet.ClientPluginAuthLenencClientData
-				require.Equal(t, expectCap, gotCap, "expected=%s,got=%s", expectCap, gotCap)
-				return nil
-			},
-		},
-	}
-	ts.runTests(runners)
-}
-
-// Test that closing the BackendConnMgr while it's receiving a redirection signal is OK.
-func TestCloseWhileRedirect(t *testing.T) {
-	ts := newBackendMgrTester(t)
-	runners := []runner{
-		// 1st handshake
-		{
-			client:  ts.mc.authenticate,
-			proxy:   ts.firstHandshake4Proxy,
-			backend: ts.handshake4Backend,
-		},
-		// close and redirect concurrently
-		{
-			proxy: func(_, _ pnet.PacketIO) error {
-				// Send an event to make Close() block at notifying.
-				addr := ts.tc.backendListener.Addr().String()
-				eventReceiver := ts.mp.getEventReceiver().(*mockEventReceiver)
-				err := eventReceiver.OnRedirectSucceed(addr, addr, ts.mp)
-				require.NoError(t, err)
-				var wg waitgroup.WaitGroup
-				wg.Run(func() {
-					_ = ts.mp.Close()
-					ts.closed = true
-				})
-				// Make sure the process goroutine finishes.
-				ts.mp.wg.Wait()
-				// Redirect() should not panic after Close() and it returns false.
-				require.False(t, ts.mp.Redirect(newMockBackendInst(ts)))
-				eventReceiver.checkEvent(t, eventSucceed)
-				wg.Wait()
-				e := eventReceiver.checkEvent(t, eventClose)
-				require.Equal(t, addr, e.from)
-				require.Equal(t, "", e.to)
-				return nil
-			},
 		},
 	}
 	ts.runTests(runners)
@@ -654,12 +258,6 @@ func TestCustomHandshake(t *testing.T) {
 				ts.mb.rows = 1
 				return ts.mb.respond(packetIO)
 			},
-		},
-		// 2nd handshake
-		{
-			client:  nil,
-			proxy:   ts.redirectSucceed4Proxy,
-			backend: ts.redirectSucceed4Backend,
 		},
 		{
 			proxy: func(clientIO, backendIO pnet.PacketIO) error {
@@ -1036,16 +634,6 @@ func TestConnAttrs(t *testing.T) {
 				return nil
 			},
 		},
-		// 2nd handshake
-		{
-			proxy: ts.redirectSucceed4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				err := ts.redirectSucceed4Backend(packetIO)
-				require.NoError(t, err)
-				require.Equal(t, attr1, ts.mb.attrs)
-				return nil
-			},
-		},
 		// CHANGE_USER updates attrs
 		{
 			client: func(packetIO pnet.PacketIO) error {
@@ -1061,65 +649,7 @@ func TestConnAttrs(t *testing.T) {
 				return nil
 			},
 		},
-		// 2nd handshake
-		{
-			proxy: ts.redirectSucceed4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				err := ts.redirectSucceed4Backend(packetIO)
-				require.NoError(t, err)
-				require.Equal(t, attr2, ts.mb.attrs)
-				return nil
-			},
-		},
 	}
-	ts.runTests(runners)
-}
-
-// Test the target backend becomes unhealthy during redirection.
-func TestBackendStatusChange(t *testing.T) {
-	ts := newBackendMgrTester(t)
-	mbi := newMockBackendInst(ts)
-	runners := []runner{
-		// 1st handshake
-		{
-			client:  ts.mc.authenticate,
-			proxy:   ts.firstHandshake4Proxy,
-			backend: ts.handshake4Backend,
-		},
-		// start a transaction to make it unredirect-able
-		{
-			client:  ts.mc.request,
-			proxy:   ts.forwardCmd4Proxy,
-			backend: ts.startTxn4Backend,
-		},
-		// try to redirect but it doesn't redirect
-		{
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				ts.mp.Redirect(mbi)
-				ts.mp.signalReceived <- signalTypeRedirect
-				// the target backend becomes unhealthy now
-				mbi.healthy.Store(false)
-				return nil
-			},
-		},
-		// finish the transaction and the redirection fails
-		{
-			client: ts.mc.request,
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				backend1 := ts.mp.backendIO.Load()
-				err := ts.forwardCmd4Proxy(clientIO, backendIO)
-				require.NoError(ts.t, err)
-				ts.mp.getEventReceiver().(*mockEventReceiver).checkEvent(ts.t, eventFail)
-				require.Equal(ts.t, backend1, ts.mp.backendIO.Load())
-				require.Eventually(ts.t, func() bool {
-					return strings.Contains(ts.mp.text.String(), ErrTargetUnhealthy.Error())
-				}, time.Second, 10*time.Millisecond)
-				return nil
-			},
-			backend: ts.respondWithNoTxn4Backend,
-		},
-	}
-
 	ts.runTests(runners)
 }
 
@@ -1242,33 +772,6 @@ func TestDisconnectLog(t *testing.T) {
 	for _, test := range tests {
 		ts.runAndCheck(ts.t, test.checker, test.runner.client, test.runner.backend, test.runner.proxy)
 	}
-}
-
-func TestProcessSignalsPanic(t *testing.T) {
-	ts := newBackendMgrTester(t)
-	runners := []runner{
-		// 1st handshake
-		{
-			client:  ts.mc.authenticate,
-			proxy:   ts.firstHandshake4Proxy,
-			backend: ts.handshake4Backend,
-		},
-		{
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				// Mock panic in `mgr.processSignals()`.
-				ts.mp.handler.onHandshake = func(connContext ConnContext, s string, err error, source ErrorSource) {
-					panic("mock panic")
-				}
-				ts.mp.Redirect(newMockBackendInst(ts))
-				// Panic won't set error so it's still treated as success. It's fine because it will close anyway.
-				ts.mp.getEventReceiver().(*mockEventReceiver).checkEvent(t, eventSucceed)
-				// Do not wait for eventClose because `clean` will wait for it.
-				return nil
-			},
-			backend: ts.redirectSucceed4Backend,
-		},
-	}
-	ts.runTests(runners)
 }
 
 func TestConnectWithBackend(t *testing.T) {

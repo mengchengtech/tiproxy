@@ -8,7 +8,6 @@ import (
 	"net"
 	"reflect"
 	"sync"
-	"time"
 
 	glist "github.com/bahlo/generic-list-go"
 	"github.com/mengchengtech/cerberus/lib/config"
@@ -40,8 +39,6 @@ type ScoreBasedRouter struct {
 	observeError error
 	// Only store the version of a random backend, so the client may see a wrong version when backends are upgrading.
 	serverVersion string
-	// To limit the speed of redirection.
-	lastRedirectTime time.Time
 }
 
 // NewScoreBasedRouter creates a ScoreBasedRouter.
@@ -61,7 +58,7 @@ func (r *ScoreBasedRouter) Init(ctx context.Context, ob observer.BackendObserver
 	r.cancelFunc = cancelFunc
 	// Log the panic.
 	r.wg.RunWithRecover(func() {
-		r.rebalanceLoop(childCtx)
+		r.refreshBackendLoop(childCtx)
 	}, nil, r.logger)
 }
 
@@ -89,11 +86,11 @@ func (router *ScoreBasedRouter) HealthyBackendCount() int {
 	return count
 }
 
-func (router *ScoreBasedRouter) getConnWrapper(conn RedirectableConn) *glist.Element[*connWrapper] {
-	return conn.Value(_routerKey).(*glist.Element[*connWrapper])
+func (router *ScoreBasedRouter) getConnEl(conn SimpleConn) *glist.Element[SimpleConn] {
+	return conn.Value(_routerKey).(*glist.Element[SimpleConn])
 }
 
-func (router *ScoreBasedRouter) setConnWrapper(conn RedirectableConn, ce *glist.Element[*connWrapper]) {
+func (router *ScoreBasedRouter) setConnEl(conn SimpleConn, ce *glist.Element[SimpleConn]) {
 	conn.SetValue(_routerKey, ce)
 }
 
@@ -123,8 +120,8 @@ func (router *ScoreBasedRouter) routeOnce(excluded []BackendInst) (BackendInst, 
 		backends = append(backends, backend)
 	}
 
-	idlestBackend := router.policy.BackendToRoute(backends)
-	if idlestBackend == nil || reflect.ValueOf(idlestBackend).IsNil() {
+	beCtx := router.policy.BackendToRoute(backends)
+	if beCtx == nil || reflect.ValueOf(beCtx).IsNil() {
 		// No available backends, maybe the health check result is outdated during rolling restart.
 		// Refresh the backends asynchronously in this case.
 		if router.observer != nil {
@@ -132,59 +129,36 @@ func (router *ScoreBasedRouter) routeOnce(excluded []BackendInst) (BackendInst, 
 		}
 		return nil, ErrNoBackend
 	}
-	backend := idlestBackend.(*backendWrapper)
+	backend := beCtx.(*backendWrapper)
 	backend.connScore++
 	return backend, nil
 }
 
-func (router *ScoreBasedRouter) onCreateConn(backendInst BackendInst, conn RedirectableConn, succeed bool) {
+func (router *ScoreBasedRouter) onCreateConn(backendInst BackendInst, conn SimpleConn, succeed bool) {
 	router.Lock()
 	defer router.Unlock()
 	backend := router.ensureBackend(backendInst.Addr())
 	if succeed {
-		connWrapper := &connWrapper{
-			RedirectableConn: conn,
-			phase:            phaseNotRedirected,
-		}
-		router.addConn(backend, connWrapper)
+		router.addConn(backend, conn)
 		conn.SetEventReceiver(router)
 	} else {
 		backend.connScore--
 	}
 }
 
-func (router *ScoreBasedRouter) removeConn(backend *backendWrapper, ce *glist.Element[*connWrapper]) {
+func (router *ScoreBasedRouter) removeConn(backend *backendWrapper, ce *glist.Element[SimpleConn]) {
 	backend.connList.Remove(ce)
 	router.removeBackendIfEmpty(backend)
 }
 
-func (router *ScoreBasedRouter) addConn(backend *backendWrapper, conn *connWrapper) {
+func (router *ScoreBasedRouter) addConn(backend *backendWrapper, conn SimpleConn) {
 	ce := backend.connList.PushBack(conn)
-	router.setConnWrapper(conn, ce)
+	router.setConnEl(conn, ce)
 }
 
 // RefreshBackend implements Router.GetBackendSelector interface.
 func (router *ScoreBasedRouter) RefreshBackend() {
 	router.observer.Refresh()
-}
-
-// RedirectConnections implements Router.RedirectConnections interface.
-// It redirects all connections compulsively. It's only used for testing.
-func (router *ScoreBasedRouter) RedirectConnections() error {
-	router.Lock()
-	defer router.Unlock()
-	for _, backend := range router.backends {
-		for ce := backend.connList.Front(); ce != nil; ce = ce.Next() {
-			// This is only for test, so we allow it to reconnect to the same backend.
-			connWrapper := ce.Value
-			if connWrapper.phase != phaseRedirectNotify {
-				connWrapper.phase = phaseRedirectNotify
-				connWrapper.redirectReason = "test"
-				connWrapper.Redirect(backend)
-			}
-		}
-	}
-	return nil
 }
 
 func (router *ScoreBasedRouter) ensureBackend(addr string) *backendWrapper {
@@ -206,57 +180,14 @@ func (router *ScoreBasedRouter) ensureBackend(addr string) *backendWrapper {
 	return backend
 }
 
-// OnRedirectSucceed implements ConnEventReceiver.OnRedirectSucceed interface.
-func (router *ScoreBasedRouter) OnRedirectSucceed(from, to string, conn RedirectableConn) error {
-	router.onRedirectFinished(from, to, conn, true)
-	return nil
-}
-
-// OnRedirectFail implements ConnEventReceiver.OnRedirectFail interface.
-func (router *ScoreBasedRouter) OnRedirectFail(from, to string, conn RedirectableConn) error {
-	router.onRedirectFinished(from, to, conn, false)
-	return nil
-}
-
-func (router *ScoreBasedRouter) onRedirectFinished(from, to string, conn RedirectableConn, succeed bool) {
-	router.Lock()
-	defer router.Unlock()
-	fromBackend := router.ensureBackend(from)
-	toBackend := router.ensureBackend(to)
-	connWrapper := router.getConnWrapper(conn).Value
-	// The connection may be closed when this function is waiting for the lock.
-	if connWrapper.phase == phaseClosed {
-		return
-	}
-
-	if succeed {
-		router.removeConn(fromBackend, router.getConnWrapper(conn))
-		router.addConn(toBackend, connWrapper)
-		connWrapper.phase = phaseRedirectEnd
-	} else {
-		fromBackend.connScore++
-		toBackend.connScore--
-		router.removeBackendIfEmpty(toBackend)
-		connWrapper.phase = phaseRedirectFail
-	}
-}
-
 // OnConnClosed implements ConnEventReceiver.OnConnClosed interface.
-func (router *ScoreBasedRouter) OnConnClosed(addr, redirectingAddr string, conn RedirectableConn) error {
+func (router *ScoreBasedRouter) OnConnClosed(addr string, conn SimpleConn) error {
 	router.Lock()
 	defer router.Unlock()
 	backend := router.ensureBackend(addr)
-	connWrapper := router.getConnWrapper(conn)
-	// If this connection has not redirected yet, decrease the score of the target backend.
-	if redirectingAddr != "" {
-		redirectingBackend := router.ensureBackend(redirectingAddr)
-		redirectingBackend.connScore--
-		router.removeBackendIfEmpty(redirectingBackend)
-	} else {
-		backend.connScore--
-	}
-	router.removeConn(backend, connWrapper)
-	connWrapper.Value.phase = phaseClosed
+	connEl := router.getConnEl(conn)
+	backend.connScore--
+	router.removeConn(backend, connEl)
 	return nil
 }
 
@@ -303,102 +234,15 @@ func (router *ScoreBasedRouter) updateBackendHealth(healthResults observer.Healt
 	}
 }
 
-func (router *ScoreBasedRouter) rebalanceLoop(ctx context.Context) {
-	ticker := time.NewTicker(rebalanceInterval)
+func (router *ScoreBasedRouter) refreshBackendLoop(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			ticker.Stop()
 			return
 		case healthResults := <-router.healthCh:
 			router.updateBackendHealth(healthResults)
-		case <-ticker.C:
-			router.rebalance(ctx)
 		}
 	}
-}
-
-// Rebalance every a short time and migrate only a few connections in each round so that:
-// - The lock is not held too long
-// - The connections are migrated to different backends
-func (router *ScoreBasedRouter) rebalance(ctx context.Context) {
-	router.Lock()
-	defer router.Unlock()
-
-	if len(router.backends) <= 1 {
-		return
-	}
-	backends := make([]policy.BackendCtx, 0, len(router.backends))
-	for _, backend := range router.backends {
-		backends = append(backends, backend)
-	}
-
-	busiestBackend, idlestBackend, balanceCount, reason, logFields := router.policy.BackendsToBalance(backends)
-	if balanceCount == 0 {
-		return
-	}
-	fromBackend, toBackend := busiestBackend.(*backendWrapper), idlestBackend.(*backendWrapper)
-
-	// Control the speed of migration.
-	curTime := time.Now()
-	migrationInterval := time.Duration(float64(time.Second) / balanceCount)
-	count := 0
-	if migrationInterval < rebalanceInterval*2 {
-		// If we need to migrate multiple connections in each round, calculate the connection count for each round.
-		count = int((rebalanceInterval-1)/migrationInterval) + 1
-	} else {
-		// If we need to wait for multiple rounds to migrate a connection, calculate the interval for each connection.
-		if curTime.Sub(router.lastRedirectTime) >= migrationInterval {
-			count = 1
-		} else {
-			return
-		}
-	}
-	// Migrate balanceCount connections.
-	i := 0
-	for ele := fromBackend.connList.Front(); ele != nil && ctx.Err() == nil && i < count; ele = ele.Next() {
-		conn := ele.Value
-		switch conn.phase {
-		case phaseRedirectNotify:
-			// A connection cannot be redirected again when it has not finished redirecting.
-			continue
-		case phaseRedirectFail:
-			// If it failed recently, it will probably fail this time.
-			if conn.lastRedirect.Add(redirectFailMinInterval).After(curTime) {
-				continue
-			}
-		}
-		if router.redirectConn(conn, fromBackend, toBackend, reason, logFields, curTime) {
-			router.lastRedirectTime = curTime
-			i++
-		}
-	}
-}
-
-func (router *ScoreBasedRouter) redirectConn(conn *connWrapper, fromBackend *backendWrapper, toBackend *backendWrapper,
-	reason string, logFields []zap.Field, curTime time.Time) bool {
-	// Skip the connection if it's closing.
-	fields := []zap.Field{
-		zap.Uint64("connID", conn.ConnectionID()),
-		zap.String("from", fromBackend.addr),
-		zap.String("to", toBackend.addr),
-	}
-	fields = append(fields, logFields...)
-	succeed := conn.Redirect(toBackend)
-	if succeed {
-		router.logger.Debug("begin redirect connection", fields...)
-		fromBackend.connScore--
-		router.removeBackendIfEmpty(fromBackend)
-		toBackend.connScore++
-		conn.phase = phaseRedirectNotify
-		conn.redirectReason = reason
-	} else {
-		// Avoid it to be redirected again immediately.
-		conn.phase = phaseRedirectFail
-		router.logger.Debug("skip redirecting because it's closing", fields...)
-	}
-	conn.lastRedirect = curTime
-	return succeed
 }
 
 func (router *ScoreBasedRouter) removeBackendIfEmpty(backend *backendWrapper) bool {
@@ -431,5 +275,5 @@ func (router *ScoreBasedRouter) Close() {
 	if router.observer != nil {
 		router.observer.Unsubscribe("score_based_router")
 	}
-	// Router only refers to RedirectableConn, it doesn't manage RedirectableConn.
+	// Router only refers to SimpleConn, it doesn't manage SimpleConn.
 }

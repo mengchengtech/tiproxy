@@ -24,7 +24,6 @@ type proxyConfig struct {
 	password          string
 	sessionToken      string
 	capability        pnet.Capability
-	waitRedirect      bool
 	connectionID      uint64
 }
 
@@ -44,10 +43,9 @@ type mockProxy struct {
 	// outputs that received from the server.
 	rs *mysql.Resultset
 	// execution results
-	err         error
-	logger      *zap.Logger
-	text        fmt.Stringer
-	holdRequest bool
+	err    error
+	logger *zap.Logger
+	text   fmt.Stringer
 }
 
 func newMockProxy(t *testing.T, cfg *proxyConfig) *mockProxy {
@@ -94,12 +92,8 @@ func (mp *mockProxy) processCmd(clientIO, backendIO pnet.PacketIO) error {
 	if err != nil {
 		return err
 	}
-	if mp.holdRequest, err = mp.cmdProcessor.executeCmd(request, clientIO, backendIO, mp.waitRedirect); err != nil {
+	if err = mp.cmdProcessor.executeCmd(request, clientIO, backendIO); err != nil {
 		return err
-	}
-	// Pretend to redirect the held request to the new backend. The backend must respond for another loop.
-	if mp.holdRequest {
-		_, err = mp.cmdProcessor.executeCmd(request, clientIO, backendIO, false)
 	}
 	return err
 }

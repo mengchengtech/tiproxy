@@ -6,15 +6,11 @@ package policy
 import (
 	"github.com/mengchengtech/cerberus/lib/config"
 	"github.com/mengchengtech/cerberus/pkg/balance/observer"
-	"go.uber.org/zap"
 )
 
 type BalancePolicy interface {
 	Init(cfg *config.Config)
 	BackendToRoute(backends []BackendCtx) BackendCtx
-	// balanceCount is the count of connections to balance per second.
-	BackendsToBalance(backends []BackendCtx) (from, to BackendCtx, balanceCount float64, reason string, logFields []zap.Field)
-	SetConfig(cfg *config.Config)
 }
 
 type BackendCtx interface {

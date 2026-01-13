@@ -17,10 +17,10 @@ const (
 	StatusPrepareWaitFetch
 )
 
-// CmdProcessor maintains the transaction and prepared statement status and decides whether the session can be redirected.
+// CmdProcessor maintains the transaction and prepared statement status.
 type CmdProcessor struct {
 	// Each prepared statement has an independent status.
-	preparedStmtStatus map[int]uint32
+	preparedStmtStatus map[int]uint32 // TODO: 判断是否需要移除
 	capability         pnet.Capability
 	// Only includes in_trans or quit status.
 	serverStatus uint32
