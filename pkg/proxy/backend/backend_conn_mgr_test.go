@@ -574,41 +574,6 @@ func TestSpecialCmds(t *testing.T) {
 	ts.runTests(runners)
 }
 
-// Test that ExecuteCmd may return a mysql error, which is required by traffic replay.
-func TestReturnMySQLError(t *testing.T) {
-	ts := newBackendMgrTester(t)
-	runners := []runner{
-		// 1st handshake
-		{
-			client:  ts.mc.authenticate,
-			proxy:   ts.firstHandshake4Proxy,
-			backend: ts.handshake4Backend,
-		},
-		// mysql error
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.cmd = pnet.ComQuery
-				ts.mc.sql = "select $$"
-				return ts.mc.request(packetIO)
-			},
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				clientIO.ResetSequence()
-				request, err := clientIO.ReadPacket()
-				require.NoError(ts.t, err)
-				rsErr := ts.mp.ExecuteCmd(context.Background(), request)
-				require.True(ts.t, pnet.IsMySQLError(rsErr))
-				require.Equal(ts.t, SrcNone, ts.mp.QuitSource())
-				return nil
-			},
-			backend: func(packetIO pnet.PacketIO) error {
-				ts.mb.respondType = responseTypeErr
-				return ts.mb.respond(packetIO)
-			},
-		},
-	}
-	ts.runTests(runners)
-}
-
 // Test that closing the BackendConnMgr while it's receiving a redirection signal is OK.
 func TestCloseWhileRedirect(t *testing.T) {
 	ts := newBackendMgrTester(t)
@@ -859,43 +824,6 @@ func TestHandlerReturnError(t *testing.T) {
 	}
 }
 
-func TestOnTraffic(t *testing.T) {
-	var inBytes, outBytes uint64
-	ts := newBackendMgrTester(t, func(config *testConfig) {
-		config.proxyConfig.handler.onTraffic = func(cc ConnContext) {
-			require.Greater(t, cc.ClientInBytes(), uint64(0))
-			require.GreaterOrEqual(t, cc.ClientInBytes(), inBytes)
-			inBytes = cc.ClientInBytes()
-			require.Greater(t, cc.ClientOutBytes(), uint64(0))
-			require.GreaterOrEqual(t, cc.ClientOutBytes(), outBytes)
-			outBytes = cc.ClientOutBytes()
-		}
-	})
-	runners := []runner{
-		// 1st handshake
-		{
-			client:  ts.mc.authenticate,
-			proxy:   ts.firstHandshake4Proxy,
-			backend: ts.handshake4Backend,
-		},
-		// query
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.sql = "select 1"
-				return ts.mc.request(packetIO)
-			},
-			proxy: ts.forwardCmd4Proxy,
-			backend: func(packetIO pnet.PacketIO) error {
-				ts.mb.respondType = responseTypeResultSet
-				ts.mb.columns = 1
-				ts.mb.rows = 1
-				return ts.mb.respond(packetIO)
-			},
-		},
-	}
-	ts.runTests(runners)
-}
-
 func TestGetBackendIO(t *testing.T) {
 	addrs := make([]string, 0, 3)
 	listeners := make([]net.Listener, 0, cap(addrs))
@@ -923,7 +851,7 @@ func TestGetBackendIO(t *testing.T) {
 		},
 	}
 	lg, _ := logger.CreateLoggerForTest(t)
-	mgr := NewBackendConnManager(lg, handler, &mockCapture{}, 0, &BCConfig{ConnectTimeout: time.Second})
+	mgr := NewBackendConnManager(lg, handler, 0, &BCConfig{ConnectTimeout: time.Second})
 	var wg waitgroup.WaitGroup
 	for i := 0; i <= len(listeners); i++ {
 		wg.Run(func() {
@@ -1338,69 +1266,6 @@ func TestProcessSignalsPanic(t *testing.T) {
 				return nil
 			},
 			backend: ts.redirectSucceed4Backend,
-		},
-	}
-	ts.runTests(runners)
-}
-
-func TestCapture(t *testing.T) {
-	ts := newBackendMgrTester(t, func(config *testConfig) {
-		config.clientConfig.dbName = "test"
-		config.proxyConfig.connectionID = 100
-		config.proxyConfig.capture = &mockCapture{}
-	})
-	runners := []runner{
-		// 1st handshake
-		{
-			client: ts.mc.authenticate,
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				now := time.Now()
-				err := ts.firstHandshake4Proxy(clientIO, backendIO)
-				require.NoError(t, err)
-				cpt := ts.mp.cpt.(*mockCapture)
-				require.Equal(t, "test", cpt.db)
-				require.GreaterOrEqual(t, cpt.startTime, now)
-				require.EqualValues(t, 100, cpt.connID)
-				return nil
-			},
-			backend: ts.handshake4Backend,
-		},
-		{
-			client: func(packetIO pnet.PacketIO) error {
-				ts.mc.sql = "select 1"
-				return ts.mc.request(packetIO)
-			},
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				now := time.Now()
-				err := ts.forwardCmd4Proxy(clientIO, backendIO)
-				cpt := ts.mp.cpt.(*mockCapture)
-				packet := append([]byte{pnet.ComQuery.Byte()}, []byte("select 1")...)
-				require.Equal(t, packet, cpt.packet)
-				require.GreaterOrEqual(t, cpt.startTime, now)
-				require.EqualValues(t, 100, cpt.connID)
-				require.Contains(t, cpt.initSql, "SET SESSION_STATES")
-				return err
-			},
-			backend: func(packetIO pnet.PacketIO) error {
-				// respond to `SHOW SESSION STATES`
-				ts.mb.respondType = responseTypeResultSet
-				err := ts.mb.respond(packetIO)
-				require.NoError(ts.t, err)
-				// respond to `select 1`
-				ts.mb.respondType = responseTypeResultSet
-				ts.mb.columns = 1
-				ts.mb.rows = 1
-				return ts.mb.respond(packetIO)
-			},
-		},
-		{
-			proxy: func(clientIO, backendIO pnet.PacketIO) error {
-				_ = ts.mp.Close()
-				ts.closed = true
-				cpt := ts.mp.cpt.(*mockCapture)
-				require.Equal(t, []byte{pnet.ComQuit.Byte()}, cpt.packet)
-				return nil
-			},
 		},
 	}
 	ts.runTests(runners)

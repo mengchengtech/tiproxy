@@ -46,7 +46,6 @@ type HandshakeHandler interface {
 	GetRouter(ctx ConnContext, resp *pnet.HandshakeResp) (router.Router, error)
 	OnHandshake(ctx ConnContext, to string, err error, src ErrorSource)
 	OnConnClose(ctx ConnContext, src ErrorSource) error
-	OnTraffic(ctx ConnContext)
 	GetCapability() pnet.Capability
 	GetServerVersion() string
 }
@@ -84,9 +83,6 @@ func (handler *DefaultHandshakeHandler) GetRouter(ctx ConnContext, resp *pnet.Ha
 func (handler *DefaultHandshakeHandler) OnHandshake(ConnContext, string, error, ErrorSource) {
 }
 
-func (handler *DefaultHandshakeHandler) OnTraffic(ConnContext) {
-}
-
 func (handler *DefaultHandshakeHandler) OnConnClose(ConnContext, ErrorSource) error {
 	return nil
 }
@@ -111,7 +107,6 @@ func (handler *DefaultHandshakeHandler) GetServerVersion() string {
 type CustomHandshakeHandler struct {
 	getRouter           func(ctx ConnContext, resp *pnet.HandshakeResp) (router.Router, error)
 	onHandshake         func(ConnContext, string, error, ErrorSource)
-	onTraffic           func(ConnContext)
 	onConnClose         func(ConnContext, ErrorSource) error
 	handleHandshakeResp func(ctx ConnContext, resp *pnet.HandshakeResp) error
 	handleHandshakeErr  func(ctx ConnContext, err *mysql.MyError) bool
@@ -129,12 +124,6 @@ func (h *CustomHandshakeHandler) GetRouter(ctx ConnContext, resp *pnet.Handshake
 func (h *CustomHandshakeHandler) OnHandshake(ctx ConnContext, addr string, err error, src ErrorSource) {
 	if h.onHandshake != nil {
 		h.onHandshake(ctx, addr, err, src)
-	}
-}
-
-func (h *CustomHandshakeHandler) OnTraffic(ctx ConnContext) {
-	if h.onTraffic != nil {
-		h.onTraffic(ctx)
 	}
 }
 

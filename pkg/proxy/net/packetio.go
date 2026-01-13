@@ -367,10 +367,7 @@ func (p *packetIO) ForwardUntil(destIO PacketIO, isEnd func(firstByte byte, firs
 	process func(response []byte) error) error {
 	p.readWriter.BeginRW(rwRead)
 	dest, _ := destIO.(*packetIO)
-	// destIO is not packetIO in traffic replay.
-	if dest != nil {
-		dest.readWriter.BeginRW(rwWrite)
-	}
+	dest.readWriter.BeginRW(rwWrite)
 	p.limitReader.R = p.readWriter
 	for {
 		header, err := p.readWriter.Peek(5)

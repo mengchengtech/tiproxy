@@ -19,7 +19,6 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/proxy/client"
 	"github.com/mengchengtech/cerberus/pkg/proxy/keepalive"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
-	"github.com/mengchengtech/cerberus/pkg/sqlreplay/capture"
 	"go.uber.org/zap"
 )
 
@@ -44,7 +43,6 @@ type SQLServer struct {
 	certMgr    *cert.CertManager
 	idMgr      *id.IDManager
 	hsHandler  backend.HandshakeHandler
-	cpt        capture.Capture
 	wg         waitgroup.WaitGroup
 	cancelFunc context.CancelFunc
 
@@ -52,14 +50,13 @@ type SQLServer struct {
 }
 
 // NewSQLServer creates a new SQLServer.
-func NewSQLServer(logger *zap.Logger, cfg *config.Config, certMgr *cert.CertManager, idMgr *id.IDManager, cpt capture.Capture, hsHandler backend.HandshakeHandler) (*SQLServer, error) {
+func NewSQLServer(logger *zap.Logger, cfg *config.Config, certMgr *cert.CertManager, idMgr *id.IDManager, hsHandler backend.HandshakeHandler) (*SQLServer, error) {
 	var err error
 	s := &SQLServer{
 		logger:    logger,
 		certMgr:   certMgr,
 		idMgr:     idMgr,
 		hsHandler: hsHandler,
-		cpt:       cpt,
 		mu: serverState{
 			clients: make(map[uint64]*client.ClientConnection),
 		},
@@ -154,7 +151,7 @@ func (s *SQLServer) onConn(ctx context.Context, conn net.Conn, addr string) {
 		logger := s.logger.With(zap.Uint64("connID", connID), zap.String("client_addr", conn.RemoteAddr().String()),
 			zap.String("addr", addr))
 		clientConn := client.NewClientConnection(logger.Named("conn"), conn, s.certMgr.ServerSQLTLS(), s.certMgr.SQLTLS(),
-			s.hsHandler, s.cpt, connID, addr, &backend.BCConfig{
+			s.hsHandler, connID, addr, &backend.BCConfig{
 				ProxyProtocol:      s.mu.proxyProtocol,
 				RequireBackendTLS:  s.mu.requireBackendTLS,
 				HealthyKeepAlive:   s.mu.healthyKeepAlive,

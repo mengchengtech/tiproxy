@@ -21,13 +21,12 @@ var (
 )
 
 type Config struct {
-	Proxy               ProxyServer `yaml:"proxy,omitempty" toml:"proxy,omitempty" json:"proxy,omitempty"`
-	API                 API         `yaml:"api,omitempty" toml:"api,omitempty" json:"api,omitempty"`
-	Workdir             string      `yaml:"workdir,omitempty" toml:"workdir,omitempty" json:"workdir,omitempty" reloadable:"false"`
-	Security            Security    `yaml:"security,omitempty" toml:"security,omitempty" json:"security,omitempty"`
-	Log                 Log         `yaml:"log,omitempty" toml:"log,omitempty" json:"log,omitempty"`
-	HA                  HA          `yaml:"ha,omitempty" toml:"ha,omitempty" json:"ha,omitempty"`
-	EnableTrafficReplay bool        `yaml:"enable-traffic-replay,omitempty" toml:"enable-traffic-replay,omitempty" json:"enable-traffic-replay,omitempty" reloadable:"true"`
+	Proxy    ProxyServer `yaml:"proxy,omitempty" toml:"proxy,omitempty" json:"proxy,omitempty"`
+	API      API         `yaml:"api,omitempty" toml:"api,omitempty" json:"api,omitempty"`
+	Workdir  string      `yaml:"workdir,omitempty" toml:"workdir,omitempty" json:"workdir,omitempty" reloadable:"false"`
+	Security Security    `yaml:"security,omitempty" toml:"security,omitempty" json:"security,omitempty"`
+	Log      Log         `yaml:"log,omitempty" toml:"log,omitempty" json:"log,omitempty"`
+	HA       HA          `yaml:"ha,omitempty" toml:"ha,omitempty" json:"ha,omitempty"`
 }
 
 type KeepAlive struct {
@@ -154,8 +153,6 @@ func NewConfig() *Config {
 	cfg.Security.ServerSQLTLS.MinTLSVersion = "1.2"
 	cfg.Security.ServerHTTPTLS.MinTLSVersion = "1.2"
 	cfg.Security.ClusterTLS.MinTLSVersion = "1.2"
-
-	cfg.EnableTrafficReplay = true
 
 	return &cfg
 }

@@ -21,7 +21,6 @@ import (
 	mgrcfg "github.com/mengchengtech/cerberus/pkg/manager/config"
 	mgrns "github.com/mengchengtech/cerberus/pkg/manager/namespace"
 	"github.com/mengchengtech/cerberus/pkg/proxy/proxyprotocol"
-	mgrrp "github.com/mengchengtech/cerberus/pkg/sqlreplay/manager"
 	"github.com/pingcap/kvproto/pkg/diagnosticspb"
 	"github.com/pingcap/sysutil"
 	"go.uber.org/atomic"
@@ -44,10 +43,9 @@ type HTTPHandler interface {
 }
 
 type Managers struct {
-	CfgMgr       *mgrcfg.ConfigManager
-	NsMgr        mgrns.NamespaceManager
-	CertMgr      *mgrcrt.CertManager
-	ReplayJobMgr mgrrp.JobManager
+	CfgMgr  *mgrcfg.ConfigManager
+	NsMgr   mgrns.NamespaceManager
+	CertMgr *mgrcrt.CertManager
 }
 
 type Server struct {
@@ -191,8 +189,6 @@ func (h *Server) registerAPI(g *gin.RouterGroup) {
 		h.registerNamespace(adminGroup.Group("namespace"))
 		h.registerConfig(adminGroup.Group("config"))
 	}
-
-	h.registerTraffic(g.Group("traffic"))
 }
 
 func (h *Server) PreClose() {

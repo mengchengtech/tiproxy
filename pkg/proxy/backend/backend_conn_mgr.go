@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -24,7 +23,6 @@ import (
 	"github.com/mengchengtech/cerberus/lib/util/waitgroup"
 	"github.com/mengchengtech/cerberus/pkg/balance/router"
 	pnet "github.com/mengchengtech/cerberus/pkg/proxy/net"
-	"github.com/mengchengtech/cerberus/pkg/sqlreplay/capture"
 	"github.com/pingcap/tidb/parser"
 	"github.com/siddontang/go/hack"
 	"go.uber.org/zap"
@@ -33,8 +31,6 @@ import (
 var (
 	ErrCloseConnMgr    = errors.New("failed to close connection manager")
 	ErrTargetUnhealthy = errors.New("target backend becomes unhealthy")
-	ErrInTxn           = errors.New("connection is in transaction")
-	ErrClosing         = errors.New("connection is closing")
 )
 
 const (
@@ -140,8 +136,6 @@ type BackendConnManager struct {
 	createTime time.Time
 	// The last time when the backend is active.
 	lastActiveTime time.Time
-	// The traffic recorded last time.
-	inBytes, inPackets, outBytes, outPackets uint64
 	// cancelFunc is used to cancel the signal processing goroutine.
 	cancelFunc context.CancelFunc
 	clientIO   pnet.PacketIO
@@ -155,11 +149,10 @@ type BackendConnManager struct {
 	}
 	connectionID uint64
 	quitSource   ErrorSource
-	cpt          capture.Capture
 }
 
 // NewBackendConnManager creates a BackendConnManager.
-func NewBackendConnManager(logger *zap.Logger, handshakeHandler HandshakeHandler, cpt capture.Capture, connectionID uint64, config *BCConfig) *BackendConnManager {
+func NewBackendConnManager(logger *zap.Logger, handshakeHandler HandshakeHandler, connectionID uint64, config *BCConfig) *BackendConnManager {
 	config.check()
 	mgr := &BackendConnManager{
 		logger:           logger,
@@ -172,7 +165,6 @@ func NewBackendConnManager(logger *zap.Logger, handshakeHandler HandshakeHandler
 		signalReceived: make(chan signalType, signalTypeNums),
 		redirectResCh:  make(chan *redirectResult, 1),
 		quitSource:     SrcNone,
-		cpt:            cpt,
 	}
 	mgr.ctxmap.m = make(map[any]any)
 	mgr.SetValue(ConnContextKeyConnID, connectionID)
@@ -204,7 +196,7 @@ func (mgr *BackendConnManager) Connect(ctx context.Context, clientIO pnet.Packet
 		// real client
 		err = mgr.authenticator.handshakeFirstTime(ctx, mgr.logger.Named("authenticator"), mgr, clientIO, mgr.handshakeHandler, mgr.getBackendIO, frontendTLSConfig, backendTLSConfig)
 	} else {
-		// fake client, used for replaying traffic
+		// fake client, used for test
 		err = mgr.authenticator.handshakeWithBackend(ctx, mgr.logger.Named("authenticator"), mgr, mgr.handshakeHandler, username, password, mgr.getBackendIO, backendTLSConfig)
 	}
 	if err != nil {
@@ -221,15 +213,11 @@ func (mgr *BackendConnManager) Connect(ctx context.Context, clientIO pnet.Packet
 	}
 	mgr.handshakeHandler.OnHandshake(mgr, mgr.ServerAddr(), nil, SrcNone)
 	endTime := time.Now()
-	mgr.updateTraffic(*mgr.backendIO.Load())
 
 	mgr.cmdProcessor.capability = mgr.authenticator.capability
 	childCtx, cancelFunc := context.WithCancel(ctx)
 	mgr.cancelFunc = cancelFunc
 	mgr.lastActiveTime = endTime
-	if mgr.cpt != nil && !reflect.ValueOf(mgr.cpt).IsNil() {
-		mgr.cpt.InitConn(endTime, mgr.connectionID, mgr.authenticator.dbname)
-	}
 	mgr.wg.RunWithRecover(func() {
 		mgr.processSignals(childCtx)
 	}, func(_ any) {
@@ -322,15 +310,11 @@ func (mgr *BackendConnManager) getBackendIO(ctx context.Context, cctx ConnContex
 // If it finds that the session is ready for redirection, it migrates the session.
 func (mgr *BackendConnManager) ExecuteCmd(ctx context.Context, request []byte) (err error) {
 	startTime := time.Now()
-	if mgr.cpt != nil && !reflect.ValueOf(mgr.cpt).IsNil() {
-		mgr.cpt.Capture(request, startTime, mgr.connectionID, mgr.initForCapture)
-	}
 	mgr.processLock.Lock()
 	defer func() {
 		if err != nil && !pnet.IsMySQLError(err) {
 			mgr.setQuitSourceByErr(err)
 		}
-		mgr.handshakeHandler.OnTraffic(mgr)
 		now := time.Now()
 		if err != nil && errors.Is(err, ErrBackendConn) {
 			cmd, data := pnet.Command(request[0]), request[1:]
@@ -363,9 +347,6 @@ func (mgr *BackendConnManager) ExecuteCmd(ctx context.Context, request []byte) (
 	var holdRequest bool
 	backendIO := *mgr.backendIO.Load()
 	holdRequest, err = mgr.cmdProcessor.executeCmd(request, mgr.clientIO, backendIO, waitingRedirect)
-	if !holdRequest {
-		mgr.updateTraffic(backendIO)
-	}
 	if err != nil {
 		if !pnet.IsMySQLError(err) {
 			return
@@ -408,14 +389,8 @@ func (mgr *BackendConnManager) ExecuteCmd(ctx context.Context, request []byte) (
 	if holdRequest && mgr.closeStatus.Load() < statusNotifyClose {
 		backendIO = *mgr.backendIO.Load()
 		_, err = mgr.cmdProcessor.executeCmd(request, mgr.clientIO, backendIO, false)
-		mgr.updateTraffic(backendIO)
 	}
 	return
-}
-
-func (mgr *BackendConnManager) updateTraffic(backendIO pnet.PacketIO) {
-	inBytes, inPackets, outBytes, outPackets := backendIO.InBytes(), backendIO.InPackets(), backendIO.OutBytes(), backendIO.OutPackets()
-	mgr.inBytes, mgr.inPackets, mgr.outBytes, mgr.outPackets = inBytes, inPackets, outBytes, outPackets
 }
 
 // SetEventReceiver implements RedirectableConn.SetEventReceiver interface.
@@ -452,24 +427,6 @@ func (mgr *BackendConnManager) querySessionStates(backendIO pnet.PacketIO) (sess
 	}
 	sessionToken, err = result.GetStringByName(0, sessionTokenCol)
 	return
-}
-
-func (mgr *BackendConnManager) initForCapture() (string, error) {
-	mgr.processLock.Lock()
-	defer mgr.processLock.Unlock()
-	if mgr.closeStatus.Load() >= statusClosing {
-		return "", ErrClosing
-	}
-	if !mgr.cmdProcessor.finishedTxn() {
-		return "", ErrInTxn
-	}
-	sessionStates, _, err := mgr.querySessionStates(*mgr.backendIO.Load())
-	if err != nil {
-		return "", err
-	}
-	sessionStates = strings.ReplaceAll(sessionStates, "\\", "\\\\")
-	sessionStates = strings.ReplaceAll(sessionStates, "'", "\\'")
-	return fmt.Sprintf(sqlSetState, sessionStates), nil
 }
 
 // processSignals runs in a goroutine to:
@@ -582,9 +539,6 @@ func (mgr *BackendConnManager) tryRedirect(ctx context.Context) {
 		}
 		return
 	}
-	mgr.updateTraffic(backendIO)
-	mgr.inBytes, mgr.inPackets, mgr.outBytes, mgr.outPackets = 0, 0, 0, 0
-	mgr.updateTraffic(newBackendIO)
 	if ignoredErr := backendIO.Close(); ignoredErr != nil && !pnet.IsDisconnectError(ignoredErr) {
 		mgr.logger.Error("close previous backend connection failed", zap.Error(ignoredErr))
 	}
@@ -779,10 +733,6 @@ func (mgr *BackendConnManager) Close() error {
 				mgr.logger.Error("close connection error", zap.String("backend_addr", addr), zap.NamedError("notify_err", err))
 			}
 		}
-	}
-	// Maybe it's unexpectedly closing without a QUIT command, explicitly add one.
-	if mgr.cpt != nil && !reflect.ValueOf(mgr.cpt).IsNil() {
-		mgr.cpt.Capture([]byte{pnet.ComQuit.Byte()}, time.Now(), mgr.connectionID, nil)
 	}
 	mgr.closeStatus.Store(statusClosed)
 	return errors.Collect(ErrCloseConnMgr, connErr, handErr)

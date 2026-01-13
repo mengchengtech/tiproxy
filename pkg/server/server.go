@@ -22,7 +22,6 @@ import (
 	"github.com/mengchengtech/cerberus/pkg/proxy/backend"
 	"github.com/mengchengtech/cerberus/pkg/sctx"
 	"github.com/mengchengtech/cerberus/pkg/server/api"
-	mgrrp "github.com/mengchengtech/cerberus/pkg/sqlreplay/manager"
 	"github.com/mengchengtech/cerberus/pkg/util/etcd"
 	"github.com/mengchengtech/cerberus/pkg/util/http"
 	"github.com/mengchengtech/cerberus/pkg/util/versioninfo"
@@ -40,7 +39,6 @@ type Server struct {
 	certManager      *cert.CertManager
 	vipManager       vip.VIPManager
 	infoSyncer       *infosync.InfoSyncer
-	replay           mgrrp.JobManager
 	// etcd client
 	etcdCli *clientv3.Client
 	// HTTP client
@@ -144,16 +142,11 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 	} else {
 		hsHandler = backend.NewDefaultHandshakeHandler(srv.namespaceManager)
 	}
-	idMgr := id.NewIDManager()
-
-	// setup capture and replay job manager
-	{
-		srv.replay = mgrrp.NewJobManager(lg.Named("replay"), srv.configManager.GetConfig(), srv.certManager, idMgr, hsHandler)
-	}
 
 	// setup proxy server
+	idMgr := id.NewIDManager()
 	{
-		srv.proxy, err = proxy.NewSQLServer(lg.Named("proxy"), cfg, srv.certManager, idMgr, srv.replay.GetCapture(), hsHandler)
+		srv.proxy, err = proxy.NewSQLServer(lg.Named("proxy"), cfg, srv.certManager, idMgr, hsHandler)
 		if err != nil {
 			return
 		}
@@ -162,10 +155,9 @@ func NewServer(ctx context.Context, sctx *sctx.Context) (srv *Server, err error)
 
 	// setup http & grpc
 	mgrs := api.Managers{
-		CfgMgr:       srv.configManager,
-		NsMgr:        srv.namespaceManager,
-		CertMgr:      srv.certManager,
-		ReplayJobMgr: srv.replay,
+		CfgMgr:  srv.configManager,
+		NsMgr:   srv.namespaceManager,
+		CertMgr: srv.certManager,
 	}
 	if srv.apiServer, err = api.NewServer(cfg.API, lg.Named("api"), mgrs, handler, ready); err != nil {
 		return
